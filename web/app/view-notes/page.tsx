@@ -38,7 +38,7 @@ export default function Home() {
         if (!token) return;
 
         await axios.post(
-          "http://localhost:5500/users/create",
+          `${process.env.NEXT_PUBLIC_API_URL}/users/create`,
           {},
           {
             headers: {
@@ -64,7 +64,7 @@ export default function Home() {
       if (!token) return;
 
       const response = await axios.get(
-        "http://localhost:5500/notes/get-notes",
+        `${process.env.NEXT_PUBLIC_API_URL}/notes/get-notes`,
         {
           params: filters || {},
           headers: {

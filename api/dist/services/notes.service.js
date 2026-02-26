@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getFilteredNotes = getFilteredNotes;
-exports.createNoteWithTag = createNoteWithTag;
+exports.createNote = createNote;
 const prisma_js_1 = require("../lib/prisma.js");
 async function getFilteredNotes(filters) {
     const { university, degree, stream, year, semester, subject, page, limit, } = filters;
@@ -30,41 +30,35 @@ async function getFilteredNotes(filters) {
         ? Math.min(Number(limit), 50)
         : 10;
     const skip = (parsedPage - 1) * parsedLimit;
-    const academicTagFilter = {};
+    const whereClause = {};
     if (normalizedUniversity) {
-        academicTagFilter.university = {
+        whereClause.university = {
             equals: normalizedUniversity,
             mode: "insensitive",
         };
     }
     if (normalizedDegree) {
-        academicTagFilter.degree = {
+        whereClause.degree = {
             equals: normalizedDegree,
             mode: "insensitive",
         };
     }
     if (normalizedStream) {
-        academicTagFilter.stream = {
+        whereClause.stream = {
             equals: normalizedStream,
             mode: "insensitive",
         };
     }
     if (parsedYear !== undefined) {
-        academicTagFilter.year = parsedYear;
+        whereClause.year = parsedYear;
     }
     if (parsedSemester !== undefined) {
-        academicTagFilter.semester = parsedSemester;
+        whereClause.semester = parsedSemester;
     }
     if (normalizedSubject) {
-        academicTagFilter.subject = {
+        whereClause.subject = {
             equals: normalizedSubject,
             mode: "insensitive",
-        };
-    }
-    const whereClause = {};
-    if (Object.keys(academicTagFilter).length > 0) {
-        whereClause.academicTag = {
-            is: academicTagFilter,
         };
     }
     const notes = await prisma_js_1.prisma.note.findMany({
@@ -74,6 +68,12 @@ async function getFilteredNotes(filters) {
             title: true,
             price: true,
             fileUrl: true,
+            university: true,
+            degree: true,
+            stream: true,
+            year: true,
+            semester: true,
+            subject: true,
             createdAt: true,
         },
         orderBy: {
@@ -84,7 +84,7 @@ async function getFilteredNotes(filters) {
     });
     return notes;
 }
-async function createNoteWithTag(data) {
+async function createNote(data) {
     const { title, description, price, fileUrl, university, degree, stream, year, semester, subject, uploadedById, } = data;
     return prisma_js_1.prisma.$transaction(async (tx) => {
         const user = await tx.user.findUnique({
@@ -93,34 +93,18 @@ async function createNoteWithTag(data) {
         if (!user) {
             throw new Error("User does not exist");
         }
-        const academicTag = await tx.academicTag.upsert({
-            where: {
-                university_degree_stream_year_semester_subject: {
-                    university,
-                    degree,
-                    stream,
-                    year,
-                    semester,
-                    subject,
-                },
-            },
-            update: {},
-            create: {
-                university,
-                degree,
-                stream,
-                year,
-                semester,
-                subject,
-            },
-        });
         return tx.note.create({
             data: {
                 title,
                 description,
                 price,
                 fileUrl,
-                academicTagId: academicTag.id,
+                university,
+                degree,
+                stream,
+                year,
+                semester,
+                subject,
                 uploadedById: user.id,
             },
         });

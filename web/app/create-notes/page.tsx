@@ -62,7 +62,7 @@ export default function CreateNotePage() {
       const token = await getToken();
       if (!token) throw new Error("Authentication failed.");
 
-      const response = await fetch("http://localhost:5500/notes/upload", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notes/upload`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,

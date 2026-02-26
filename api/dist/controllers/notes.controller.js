@@ -44,6 +44,7 @@ const path_1 = __importDefault(require("path"));
 const uuid_1 = require("uuid");
 const noteService = __importStar(require("../services/notes.service.js"));
 const notes_service_js_1 = require("../services/notes.service.js");
+const express_1 = require("@clerk/express");
 const prisma_js_1 = require("../lib/prisma.js");
 /* ---------------- FETCH NOTES ---------------- */
 async function fetchNotes(req, res) {
@@ -88,7 +89,7 @@ exports.upload = (0, multer_1.default)({
 }).single("file");
 async function uploadNote(req, res) {
     try {
-        const userId = req.user.sub;
+        const { userId } = (0, express_1.getAuth)(req);
         if (!userId) {
             return res.status(401).json({ message: "Unauthorized" });
         }
@@ -96,14 +97,14 @@ async function uploadNote(req, res) {
             return res.status(400).json({ message: "PDF file required" });
         }
         const dbUser = await prisma_js_1.prisma.user.findUnique({
-            where: { id: userId },
+            where: { clerkId: userId },
         });
         if (!dbUser) {
             return res.status(404).json({ message: "User not found in database" });
         }
         const { title, description, price, university, degree, stream, year, semester, subject, } = req.body;
         const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-        const note = await noteService.createNoteWithTag({
+        const note = await noteService.createNote({
             title,
             description,
             price: Number(price),

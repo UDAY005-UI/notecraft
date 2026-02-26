@@ -48,7 +48,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.NullsOrder = exports.QueryMode = exports.SortOrder = exports.PurchaseScalarFieldEnum = exports.NoteScalarFieldEnum = exports.AcademicTagScalarFieldEnum = exports.UserScalarFieldEnum = exports.TransactionIsolationLevel = exports.ModelName = exports.AnyNull = exports.JsonNull = exports.DbNull = exports.NullTypes = exports.Decimal = void 0;
+exports.NullsOrder = exports.QueryMode = exports.SortOrder = exports.PurchaseScalarFieldEnum = exports.NoteScalarFieldEnum = exports.UserScalarFieldEnum = exports.TransactionIsolationLevel = exports.ModelName = exports.AnyNull = exports.JsonNull = exports.DbNull = exports.NullTypes = exports.Decimal = void 0;
 const runtime = __importStar(require("@prisma/client/runtime/index-browser"));
 exports.Decimal = runtime.Decimal;
 exports.NullTypes = {
@@ -76,7 +76,6 @@ exports.JsonNull = runtime.JsonNull;
 exports.AnyNull = runtime.AnyNull;
 exports.ModelName = {
     User: 'User',
-    AcademicTag: 'AcademicTag',
     Note: 'Note',
     Purchase: 'Purchase'
 };
@@ -91,6 +90,7 @@ exports.TransactionIsolationLevel = runtime.makeStrictEnum({
 });
 exports.UserScalarFieldEnum = {
     id: 'id',
+    clerkId: 'clerkId',
     email: 'email',
     password: 'password',
     role: 'role',
@@ -99,23 +99,18 @@ exports.UserScalarFieldEnum = {
     avatarUrl: 'avatarUrl',
     fullName: 'fullName'
 };
-exports.AcademicTagScalarFieldEnum = {
-    id: 'id',
-    university: 'university',
-    degree: 'degree',
-    stream: 'stream',
-    year: 'year',
-    semester: 'semester',
-    subject: 'subject',
-    createdAt: 'createdAt'
-};
 exports.NoteScalarFieldEnum = {
     id: 'id',
     title: 'title',
     description: 'description',
     fileUrl: 'fileUrl',
     price: 'price',
-    academicTagId: 'academicTagId',
+    university: 'university',
+    degree: 'degree',
+    stream: 'stream',
+    year: 'year',
+    semester: 'semester',
+    subject: 'subject',
     uploadedById: 'uploadedById',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'

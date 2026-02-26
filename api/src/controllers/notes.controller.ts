@@ -1,8 +1,8 @@
-import type { Request, Response } from "express";
+import type { Request, Response, RequestHandler } from "express";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
-import type { RequestHandler } from "express";
 import * as noteService from "../services/notes.service.js";
 import { getFilteredNotes } from "../services/notes.service.js";
 import { getAuth } from "@clerk/express";
@@ -16,7 +16,6 @@ export async function fetchNotes(
 ): Promise<Response> {
   try {
     const filters = req.query;
-
     const notes = await getFilteredNotes(filters);
 
     return res.status(200).json({
@@ -25,12 +24,19 @@ export async function fetchNotes(
     });
   } catch (error) {
     console.error(error);
-
     return res.status(500).json({
       success: false,
       message: "Failed to fetch notes",
     });
   }
+}
+
+/* ---------------- ENSURE UPLOAD FOLDER EXISTS ---------------- */
+
+const uploadDir = path.join(process.cwd(), "uploads");
+
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 /* ---------------- MULTER CONFIG ---------------- */
@@ -39,14 +45,14 @@ const storage: multer.StorageEngine = multer.diskStorage({
   destination: (
     req: Request,
     file: Express.Multer.File,
-    cb: (error: Error | null, destination: string) => void
+    cb
   ) => {
-    cb(null, "uploads/");
+    cb(null, uploadDir);
   },
   filename: (
     req: Request,
     file: Express.Multer.File,
-    cb: (error: Error | null, filename: string) => void
+    cb
   ) => {
     const uniqueName = uuidv4() + path.extname(file.originalname);
     cb(null, uniqueName);
@@ -54,8 +60,8 @@ const storage: multer.StorageEngine = multer.diskStorage({
 });
 
 const fileFilter: multer.Options["fileFilter"] = (
-  req: Request,
-  file: Express.Multer.File,
+  req,
+  file,
   cb
 ) => {
   if (file.mimetype === "application/pdf") {
@@ -68,14 +74,15 @@ const fileFilter: multer.Options["fileFilter"] = (
 export const upload: RequestHandler = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 }).single("file");
+
+/* ---------------- UPLOAD NOTE ---------------- */
 
 interface UploadNoteBody {
   title: string;
   description?: string;
   price: string;
-
   university: string;
   degree: string;
   stream: string;
@@ -100,7 +107,7 @@ export async function uploadNote(
     }
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: userId }, 
+      where: { clerkId: userId },
     });
 
     if (!dbUser) {
@@ -139,7 +146,9 @@ export async function uploadNote(
       message: "PDF uploaded successfully",
       note,
     });
+
   } catch (error) {
+    console.error("Upload error:", error);
     return res.status(500).json({ message: "Upload failed" });
   }
 }

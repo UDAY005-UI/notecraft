@@ -13,9 +13,14 @@ const app: Express = express();
 const PORT = process.env.PORT || 5500;
 
 /* ---------------- CORS ---------------- */
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://notecraft-gwvd.onrender.com"
+];
+
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: allowedOrigins,
     credentials: true,
   })
 );

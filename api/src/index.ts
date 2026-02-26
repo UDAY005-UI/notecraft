@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 5500;
 /* ---------------- CORS ---------------- */
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://notecraft-gwvd.onrender.com"
+  "https://notecraft-two.vercel.app/"
 ];
 
 app.use(

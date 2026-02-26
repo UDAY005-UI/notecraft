@@ -92,6 +92,7 @@ interface UploadNoteBody {
 }
 
 export async function uploadNote(
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   req: Request<{}, {}, UploadNoteBody>,
   res: Response
 ) {

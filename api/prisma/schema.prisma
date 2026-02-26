@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String     @id @default(uuid())
+  clerkId       String     @unique
+  email         String     @unique
+  password      String
+  role          Role       @default(USER)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  avatarUrl     String?
+  fullName      String?
+
+  uploadedNotes Note[]     @relation("UploadedNotes")
+  purchases     Purchase[]
+
+  @@index([role])
+}
+
+model Note {
+  id            String   @id @default(uuid())
+  title         String
+  description   String?
+  fileUrl       String
+  price         Int      @default(0)
+
+  // Academic fields (moved from AcademicTag)
+  university    String
+  degree        String
+  stream        String
+  year          Int
+  semester      Int
+  subject       String
+
+  uploadedById  String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  uploadedBy    User      @relation("UploadedNotes", fields: [uploadedById], references: [id], onDelete: Cascade)
+  purchases     Purchase[]
+
+  @@index([uploadedById])
+  @@index([price])
+  @@index([createdAt])
+  @@index([university])
+  @@index([degree])
+  @@index([stream])
+  @@index([year])
+  @@index([semester])
+  @@index([subject])
+}
+
+model Purchase {
+  id            String        @id @default(uuid())
+  userId        String
+  noteId        String
+  paymentStatus PaymentStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+
+  note          Note          @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, noteId])
+  @@index([paymentStatus])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}

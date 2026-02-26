@@ -13,14 +13,10 @@ const app: Express = express();
 const PORT = process.env.PORT || 5500;
 
 /* ---------------- CORS ---------------- */
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://notecraft-two.vercel.app/"
-];
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: "https://notecraft-two.vercel.app",
     credentials: true,
   })
 );

@@ -58,7 +58,7 @@ app.use("/notes", notesRoutes);
 /* Static file serving */
 app.use(
   "/uploads",
-  express.static(path.join(process.cwd(), "src/uploads"))
+  express.static(path.join(process.cwd(), "uploads"))
 );
 
 /* ---------------- SERVER ---------------- */

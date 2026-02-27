@@ -1,8 +1,7 @@
 import type { Request, Response, RequestHandler } from "express";
 import multer from "multer";
-import path from "path";
-import fs from "fs";
-import { v4 as uuidv4 } from "uuid";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import cloudinary from "../lib/cloudinary.js";
 import * as noteService from "../services/notes.service.js";
 import { getFilteredNotes } from "../services/notes.service.js";
 import { getAuth } from "@clerk/express";
@@ -23,6 +22,7 @@ export async function fetchNotes(
       data: notes,
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error(error);
     return res.status(500).json({
       success: false,
@@ -31,39 +31,18 @@ export async function fetchNotes(
   }
 }
 
-/* ---------------- ENSURE UPLOAD FOLDER EXISTS ---------------- */
+/* ---------------- MULTER CLOUDINARY CONFIG ---------------- */
 
-const uploadDir = path.join(process.cwd(), "uploads");
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-/* ---------------- MULTER CONFIG ---------------- */
-
-const storage: multer.StorageEngine = multer.diskStorage({
-  destination: (
-    req: Request,
-    file: Express.Multer.File,
-    cb
-  ) => {
-    cb(null, uploadDir);
-  },
-  filename: (
-    req: Request,
-    file: Express.Multer.File,
-    cb
-  ) => {
-    const uniqueName = uuidv4() + path.extname(file.originalname);
-    cb(null, uniqueName);
-  },
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => ({
+    folder: "notes-pdfs",
+    resource_type: "raw", // required for PDFs
+    public_id: `${Date.now()}-${file.originalname}`,
+  }),
 });
 
-const fileFilter: multer.Options["fileFilter"] = (
-  req,
-  file,
-  cb
-) => {
+const fileFilter: multer.Options["fileFilter"] = (req, file, cb) => {
   if (file.mimetype === "application/pdf") {
     cb(null, true);
   } else {
@@ -74,7 +53,7 @@ const fileFilter: multer.Options["fileFilter"] = (
 export const upload: RequestHandler = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 10 * 1024 * 1024 },
 }).single("file");
 
 /* ---------------- UPLOAD NOTE ---------------- */
@@ -127,6 +106,7 @@ export async function uploadNote(
       subject,
     } = req.body;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
 
     const note = await noteService.createNote({
@@ -149,6 +129,7 @@ export async function uploadNote(
     });
 
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error("Upload error:", error);
     return res.status(500).json({ message: "Upload failed" });
   }

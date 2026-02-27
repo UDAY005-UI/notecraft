@@ -1,11 +1,11 @@
 import express from "express";
 import {
   fetchNotes,
-  upload,
   uploadNote,
 } from "../controllers/notes.controller.js";
 import { clerkAuth } from "../middlewares/clerkAuth.js";
 import { requireAdmin } from "../middlewares/requireAdmin.js";
+import { upload } from "../middlewares/upload.js";
 
 const router = express.Router();
 
@@ -21,10 +21,10 @@ router.get(
 
 router.post(
   "/upload",
-  clerkAuth, 
-  requireAdmin,  // 1️⃣ Verify token → sets req.user
-  upload,      // 2️⃣ Multer parses multipart/form-data
-  uploadNote   // 3️⃣ Controller logic
+  clerkAuth,
+  requireAdmin,
+  upload,
+  uploadNote
 );
 
 export default router;

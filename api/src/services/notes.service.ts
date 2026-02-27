@@ -104,7 +104,7 @@ export async function getFilteredNotes(filters: NoteFilters) {
     };
   }
 
-  const notes = await prisma.note.findMany({
+  return prisma.note.findMany({
     where: whereClause,
     select: {
       id: true,
@@ -119,14 +119,10 @@ export async function getFilteredNotes(filters: NoteFilters) {
       subject: true,
       createdAt: true,
     },
-    orderBy: {
-      createdAt: "desc",
-    },
+    orderBy: { createdAt: "desc" },
     skip,
     take: parsedLimit,
   });
-
-  return notes;
 }
 
 interface CreateNoteInput {
@@ -134,35 +130,19 @@ interface CreateNoteInput {
   description?: string;
   price: number;
   fileUrl: string;
-
   university: string;
   degree: string;
   stream: string;
   year: number;
   semester: number;
   subject: string;
-
   uploadedById: string;
 }
 
 export async function createNote(data: CreateNoteInput) {
-  const {
-    title,
-    description,
-    price,
-    fileUrl,
-    university,
-    degree,
-    stream,
-    year,
-    semester,
-    subject,
-    uploadedById,
-  } = data;
-
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.findUnique({
-      where: { id: uploadedById },
+      where: { id: data.uploadedById },
     });
 
     if (!user) {
@@ -170,19 +150,7 @@ export async function createNote(data: CreateNoteInput) {
     }
 
     return tx.note.create({
-      data: {
-        title,
-        description,
-        price,
-        fileUrl,
-        university,
-        degree,
-        stream,
-        year,
-        semester,
-        subject,
-        uploadedById: user.id,
-      },
+      data,
     });
   });
 }

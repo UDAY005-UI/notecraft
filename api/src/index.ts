@@ -3,9 +3,10 @@ import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
 import { clerkMiddleware } from "@clerk/express";
-
+import fs from "fs";
 import notesRoutes from "./routes/notes.routes";
 import userRoutes from "./routes/users.routes";
+import paymentRoutes from "./routes/payment.routes";
 
 dotenv.config();
 
@@ -13,6 +14,7 @@ const app: Express = express();
 const PORT = process.env.PORT || 5500;
 
 /* ---------------- CORS ---------------- */
+app.use(express.json());
 
 app.use(
   cors({
@@ -22,7 +24,6 @@ app.use(
 );
 
 /* ---------------- BODY PARSER ---------------- */
-app.use(express.json());
 
 /* ---------------- REQUEST LOGGER ---------------- */
 app.use((req, res, next) => {
@@ -51,15 +52,17 @@ console.log("──────────────────────�
 =========================== */
 app.use(clerkMiddleware());
 
+const uploadDir = path.join(process.cwd(), "uploads");
+
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+    console.log("Created uploads directory");
+}
+
 /* ---------------- ROUTES ---------------- */
 app.use("/users", userRoutes);
 app.use("/notes", notesRoutes);
-
-/* Static file serving */
-app.use(
-  "/uploads",
-  express.static(path.join(process.cwd(), "uploads"))
-);
+app.use("/payment", paymentRoutes);
 
 /* ---------------- SERVER ---------------- */
 app.listen(PORT, () => {

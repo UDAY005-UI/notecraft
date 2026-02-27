@@ -245,7 +245,7 @@ export type NoteGroupByOutputType = {
   id: string
   title: string
   description: string | null
-  fileUrl: string
+  fileUrl: string | null
   price: number
   university: string
   degree: string
@@ -285,7 +285,7 @@ export type NoteWhereInput = {
   id?: Prisma.StringFilter<"Note"> | string
   title?: Prisma.StringFilter<"Note"> | string
   description?: Prisma.StringNullableFilter<"Note"> | string | null
-  fileUrl?: Prisma.StringFilter<"Note"> | string
+  fileUrl?: Prisma.StringNullableFilter<"Note"> | string | null
   price?: Prisma.IntFilter<"Note"> | number
   university?: Prisma.StringFilter<"Note"> | string
   degree?: Prisma.StringFilter<"Note"> | string
@@ -304,7 +304,7 @@ export type NoteOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
-  fileUrl?: Prisma.SortOrder
+  fileUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   price?: Prisma.SortOrder
   university?: Prisma.SortOrder
   degree?: Prisma.SortOrder
@@ -326,7 +326,7 @@ export type NoteWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.NoteWhereInput | Prisma.NoteWhereInput[]
   title?: Prisma.StringFilter<"Note"> | string
   description?: Prisma.StringNullableFilter<"Note"> | string | null
-  fileUrl?: Prisma.StringFilter<"Note"> | string
+  fileUrl?: Prisma.StringNullableFilter<"Note"> | string | null
   price?: Prisma.IntFilter<"Note"> | number
   university?: Prisma.StringFilter<"Note"> | string
   degree?: Prisma.StringFilter<"Note"> | string
@@ -345,7 +345,7 @@ export type NoteOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
-  fileUrl?: Prisma.SortOrder
+  fileUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   price?: Prisma.SortOrder
   university?: Prisma.SortOrder
   degree?: Prisma.SortOrder
@@ -370,7 +370,7 @@ export type NoteScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Note"> | string
   title?: Prisma.StringWithAggregatesFilter<"Note"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"Note"> | string | null
-  fileUrl?: Prisma.StringWithAggregatesFilter<"Note"> | string
+  fileUrl?: Prisma.StringNullableWithAggregatesFilter<"Note"> | string | null
   price?: Prisma.IntWithAggregatesFilter<"Note"> | number
   university?: Prisma.StringWithAggregatesFilter<"Note"> | string
   degree?: Prisma.StringWithAggregatesFilter<"Note"> | string
@@ -387,7 +387,7 @@ export type NoteCreateInput = {
   id?: string
   title: string
   description?: string | null
-  fileUrl: string
+  fileUrl?: string | null
   price?: number
   university: string
   degree: string
@@ -405,7 +405,7 @@ export type NoteUncheckedCreateInput = {
   id?: string
   title: string
   description?: string | null
-  fileUrl: string
+  fileUrl?: string | null
   price?: number
   university: string
   degree: string
@@ -423,7 +423,7 @@ export type NoteUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  fileUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  fileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.IntFieldUpdateOperationsInput | number
   university?: Prisma.StringFieldUpdateOperationsInput | string
   degree?: Prisma.StringFieldUpdateOperationsInput | string
@@ -441,7 +441,7 @@ export type NoteUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  fileUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  fileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.IntFieldUpdateOperationsInput | number
   university?: Prisma.StringFieldUpdateOperationsInput | string
   degree?: Prisma.StringFieldUpdateOperationsInput | string
@@ -459,7 +459,7 @@ export type NoteCreateManyInput = {
   id?: string
   title: string
   description?: string | null
-  fileUrl: string
+  fileUrl?: string | null
   price?: number
   university: string
   degree: string
@@ -476,7 +476,7 @@ export type NoteUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  fileUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  fileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.IntFieldUpdateOperationsInput | number
   university?: Prisma.StringFieldUpdateOperationsInput | string
   degree?: Prisma.StringFieldUpdateOperationsInput | string
@@ -492,7 +492,7 @@ export type NoteUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  fileUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  fileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.IntFieldUpdateOperationsInput | number
   university?: Prisma.StringFieldUpdateOperationsInput | string
   degree?: Prisma.StringFieldUpdateOperationsInput | string
@@ -651,7 +651,7 @@ export type NoteCreateWithoutUploadedByInput = {
   id?: string
   title: string
   description?: string | null
-  fileUrl: string
+  fileUrl?: string | null
   price?: number
   university: string
   degree: string
@@ -668,7 +668,7 @@ export type NoteUncheckedCreateWithoutUploadedByInput = {
   id?: string
   title: string
   description?: string | null
-  fileUrl: string
+  fileUrl?: string | null
   price?: number
   university: string
   degree: string
@@ -714,7 +714,7 @@ export type NoteScalarWhereInput = {
   id?: Prisma.StringFilter<"Note"> | string
   title?: Prisma.StringFilter<"Note"> | string
   description?: Prisma.StringNullableFilter<"Note"> | string | null
-  fileUrl?: Prisma.StringFilter<"Note"> | string
+  fileUrl?: Prisma.StringNullableFilter<"Note"> | string | null
   price?: Prisma.IntFilter<"Note"> | number
   university?: Prisma.StringFilter<"Note"> | string
   degree?: Prisma.StringFilter<"Note"> | string
@@ -731,7 +731,7 @@ export type NoteCreateWithoutPurchasesInput = {
   id?: string
   title: string
   description?: string | null
-  fileUrl: string
+  fileUrl?: string | null
   price?: number
   university: string
   degree: string
@@ -748,7 +748,7 @@ export type NoteUncheckedCreateWithoutPurchasesInput = {
   id?: string
   title: string
   description?: string | null
-  fileUrl: string
+  fileUrl?: string | null
   price?: number
   university: string
   degree: string
@@ -781,7 +781,7 @@ export type NoteUpdateWithoutPurchasesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  fileUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  fileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.IntFieldUpdateOperationsInput | number
   university?: Prisma.StringFieldUpdateOperationsInput | string
   degree?: Prisma.StringFieldUpdateOperationsInput | string
@@ -798,7 +798,7 @@ export type NoteUncheckedUpdateWithoutPurchasesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  fileUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  fileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.IntFieldUpdateOperationsInput | number
   university?: Prisma.StringFieldUpdateOperationsInput | string
   degree?: Prisma.StringFieldUpdateOperationsInput | string
@@ -815,7 +815,7 @@ export type NoteCreateManyUploadedByInput = {
   id?: string
   title: string
   description?: string | null
-  fileUrl: string
+  fileUrl?: string | null
   price?: number
   university: string
   degree: string
@@ -831,7 +831,7 @@ export type NoteUpdateWithoutUploadedByInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  fileUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  fileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.IntFieldUpdateOperationsInput | number
   university?: Prisma.StringFieldUpdateOperationsInput | string
   degree?: Prisma.StringFieldUpdateOperationsInput | string
@@ -848,7 +848,7 @@ export type NoteUncheckedUpdateWithoutUploadedByInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  fileUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  fileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.IntFieldUpdateOperationsInput | number
   university?: Prisma.StringFieldUpdateOperationsInput | string
   degree?: Prisma.StringFieldUpdateOperationsInput | string
@@ -865,7 +865,7 @@ export type NoteUncheckedUpdateManyWithoutUploadedByInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  fileUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  fileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.IntFieldUpdateOperationsInput | number
   university?: Prisma.StringFieldUpdateOperationsInput | string
   degree?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1004,7 +1004,7 @@ export type $NotePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     id: string
     title: string
     description: string | null
-    fileUrl: string
+    fileUrl: string | null
     price: number
     university: string
     degree: string

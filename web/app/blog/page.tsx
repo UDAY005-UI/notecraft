@@ -1,7 +1,5 @@
 "use client";
 
-import { blogPosts } from "@/lib/blogData";
-
 export default function BlogPage() {
   return (
     <div className="w-[90%] md:w-[70%] mx-auto px-6 min-h-screen bg-white text-black">

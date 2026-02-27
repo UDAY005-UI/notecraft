@@ -23,7 +23,9 @@ router.post(
   "/upload",
   clerkAuth,
   requireAdmin,
-  upload,
+  upload.fields([
+    {name: "file", maxCount: 1}
+  ]),
   uploadNote
 );
 

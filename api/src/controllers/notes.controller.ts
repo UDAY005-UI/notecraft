@@ -1,11 +1,10 @@
-import type { Request, Response, RequestHandler } from "express";
-import multer from "multer";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
+import { raw, type Request, type Response } from "express";
 import cloudinary from "../lib/cloudinary.js";
 import * as noteService from "../services/notes.service.js";
 import { getFilteredNotes } from "../services/notes.service.js";
 import { getAuth } from "@clerk/express";
 import { prisma } from "../lib/prisma.js";
+import fs from "fs";
 
 /* ---------------- FETCH NOTES ---------------- */
 
@@ -22,7 +21,6 @@ export async function fetchNotes(
       data: notes,
     });
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error(error);
     return res.status(500).json({
       success: false,
@@ -30,31 +28,6 @@ export async function fetchNotes(
     });
   }
 }
-
-/* ---------------- MULTER CLOUDINARY CONFIG ---------------- */
-
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: async (req, file) => ({
-    folder: "notes-pdfs",
-    resource_type: "raw", // required for PDFs
-    public_id: `${Date.now()}-${file.originalname}`,
-  }),
-});
-
-const fileFilter: multer.Options["fileFilter"] = (req, file, cb) => {
-  if (file.mimetype === "application/pdf") {
-    cb(null, true);
-  } else {
-    cb(new Error("Only PDF files are allowed"));
-  }
-};
-
-export const upload: RequestHandler = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 },
-}).single("file");
 
 /* ---------------- UPLOAD NOTE ---------------- */
 
@@ -77,12 +50,16 @@ export async function uploadNote(
 ) {
   try {
     const { userId } = getAuth(req);
+    const files = req.files as {
+      [fieldname: string]: Express.Multer.File[];
+    };
+    const pdfFile = files?.file?.[0];
 
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    if (!req.file) {
+    if (!pdfFile) {
       return res.status(400).json({ message: "PDF file required" });
     }
 
@@ -106,8 +83,20 @@ export async function uploadNote(
       subject,
     } = req.body;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    let fileUrl: string | null = null;
+
+    if (pdfFile) {
+      const thumbUpload = await cloudinary.uploader.upload(
+        pdfFile.path,
+        {
+          folder: "notes/pdfs",
+          resource_type: "raw",
+          format: "pdf",
+        }
+      );
+      fileUrl = thumbUpload.secure_url;
+      fs.unlinkSync(pdfFile.path);
+    }
 
     const note = await noteService.createNote({
       title,
@@ -129,7 +118,6 @@ export async function uploadNote(
     });
 
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error("Upload error:", error);
     return res.status(500).json({ message: "Upload failed" });
   }

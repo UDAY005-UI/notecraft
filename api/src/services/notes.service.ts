@@ -109,6 +109,7 @@ export async function getFilteredNotes(filters: NoteFilters) {
     select: {
       id: true,
       title: true,
+      description: true,
       price: true,
       fileUrl: true,
       university: true,
@@ -129,7 +130,7 @@ interface CreateNoteInput {
   title: string;
   description?: string;
   price: number;
-  fileUrl: string;
+  fileUrl: string | null;
   university: string;
   degree: string;
   stream: string;
@@ -152,5 +153,5 @@ export async function createNote(data: CreateNoteInput) {
     return tx.note.create({
       data,
     });
-  });
+  }, { timeout: 90000});
 }

@@ -6,7 +6,6 @@ import { clerkMiddleware } from "@clerk/express";
 import fs from "fs";
 import notesRoutes from "./routes/notes.routes";
 import userRoutes from "./routes/users.routes";
-import paymentRoutes from "./routes/payment.routes";
 
 dotenv.config();
 
@@ -62,7 +61,6 @@ if (!fs.existsSync(uploadDir)) {
 /* ---------------- ROUTES ---------------- */
 app.use("/users", userRoutes);
 app.use("/notes", notesRoutes);
-app.use("/payment", paymentRoutes);
 
 /* ---------------- SERVER ---------------- */
 app.listen(PORT, () => {

@@ -28,7 +28,7 @@ model Note {
   id            String   @id @default(uuid())
   title         String
   description   String?
-  fileUrl       String
+  fileUrl       String?
   price         Int      @default(0)
 
   // Academic fields (moved from AcademicTag)

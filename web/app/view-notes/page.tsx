@@ -5,6 +5,13 @@ import axios from "axios";
 import { AuthGuard } from "../components/AuthWrapper";
 import { useAuth, useUser } from "@clerk/nextjs";
 
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Razorpay: any;
+  }
+}
+
 interface Note {
   id: string;
   title: string;
@@ -21,8 +28,15 @@ interface Note {
 }
 
 export default function ViewNotes() {
+
   const { getToken } = useAuth();
   const { isLoaded, isSignedIn } = useUser();
+
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const [purchasedNotes, setPurchasedNotes] = useState<string[]>([]);
+  const [purchasedNotesData, setPurchasedNotesData] = useState<Note[]>([]);
 
   const [university, setUniversity] = useState("");
   const [degree, setDegree] = useState("");
@@ -31,16 +45,26 @@ export default function ViewNotes() {
   const [semester, setSemester] = useState("");
   const [subject, setSubject] = useState("");
 
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(false);
+  const loadRazorpay = () => {
+    return new Promise<boolean>((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
 
-  /* ------------------ USER SYNC ------------------ */
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+
+      document.body.appendChild(script);
+    });
+  };
 
   useEffect(() => {
+
     if (!isLoaded || !isSignedIn) return;
 
     const syncUser = async () => {
+
       try {
+
         const token = await getToken();
         if (!token) return;
 
@@ -53,18 +77,23 @@ export default function ViewNotes() {
             },
           }
         );
+
       } catch (err) {
+
         console.error("User sync error:", err);
+
       }
+
     };
 
     syncUser();
+
   }, [isLoaded, isSignedIn, getToken]);
 
-  /* ------------------ FETCH NOTES ------------------ */
-
   const fetchNotes = async (filters?: Record<string, string>) => {
+
     try {
+
       setLoading(true);
 
       const token = await getToken();
@@ -85,24 +114,128 @@ export default function ViewNotes() {
       } else {
         setNotes([]);
       }
+
     } catch (error) {
+
       console.error("Error fetching notes:", error);
       setNotes([]);
+
     } finally {
+
       setLoading(false);
+
     }
+
   };
 
-  /* ------------------ INITIAL LOAD ------------------ */
+  const fetchPurchasedNotes = async () => {
+
+    try {
+
+      const token = await getToken();
+      if (!token) return;
+
+      const res = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/notes/my-purchases`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log(res);
+      const purchased = res.data.data || [];
+
+      setPurchasedNotesData(purchased);
+      setPurchasedNotes(purchased.map((n: Note) => n.id));
+
+    } catch (err) {
+
+      console.error("Purchase fetch error:", err);
+
+    }
+
+  };
 
   useEffect(() => {
+
     if (!isLoaded || !isSignedIn) return;
+
     fetchNotes();
+    fetchPurchasedNotes();
+
   }, [isLoaded, isSignedIn]);
 
-  /* ------------------ APPLY FILTERS ------------------ */
+  const buyNote = async (noteId: string) => {
+
+    try {
+
+      const token = await getToken();
+      if (!token) return;
+
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/payment/create-order`,
+        { noteId },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = res.data;
+
+      const loaded = await loadRazorpay();
+
+      if (!loaded) {
+        alert("Payment gateway failed to load");
+        return;
+      }
+
+      const options = {
+
+        key: data.key,
+        amount: data.amount,
+        currency: data.currency,
+        order_id: data.orderId,
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        handler: async function (response: any) {
+
+          await axios.post(
+            `${process.env.NEXT_PUBLIC_API_URL}/payment/verify`,
+            {
+              ...response,
+              purchaseId: data.purchaseId,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          await fetchPurchasedNotes();
+
+          alert("Payment successful!");
+
+        },
+
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+
+    } catch (error) {
+
+      console.error("Payment error:", error);
+
+    }
+
+  };
 
   const handleApplyFilters = () => {
+
     const params: Record<string, string> = {};
 
     if (university) params.university = university;
@@ -113,18 +246,77 @@ export default function ViewNotes() {
     if (subject) params.subject = subject;
 
     fetchNotes(params);
+
   };
 
   return (
     <AuthGuard>
       <div className="min-h-screen bg-white py-12 px-4">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-semibold text-black mb-8">
-            Browse Notes
-          </h1>
+
+          {/* PURCHASED NOTES AT TOP */}
+
+          {purchasedNotesData.length > 0 && (
+            <div className="mb-12">
+
+              <h2 className="text-2xl font-semibold text-black mb-6">
+                Your Purchased Notes
+              </h2>
+
+              <div className="grid md:grid-cols-3 gap-8">
+
+                {purchasedNotesData.map((note) => (
+
+                  <div
+                    key={note.id}
+                    className="bg-gray-50 p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition flex flex-col justify-between"
+                  >
+
+                    <div>
+
+                      <h3 className="text-xl font-semibold text-black mb-2">
+                        {note.title}
+                      </h3>
+
+                      <div className="text-sm text-gray-600 mb-3 space-y-1">
+                        <p><span className="font-medium">University:</span> {note.university}</p>
+                        <p><span className="font-medium">Degree:</span> {note.degree} | {note.stream}</p>
+                        <p><span className="font-medium">Year:</span> {note.year} | Semester {note.semester}</p>
+                        <p><span className="font-medium">Subject:</span> {note.subject}</p>
+                      </div>
+
+                      <p className="text-gray-700 text-sm leading-relaxed mb-4 line-clamp-4">
+                        {note.description}
+                      </p>
+
+                    </div>
+
+                    <div className="mt-4 flex justify-end">
+
+                      <a
+                        href={note.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 transition"
+                      >
+                        View PDF
+                      </a>
+
+                    </div>
+
+                  </div>
+
+                ))}
+
+              </div>
+
+            </div>
+          )}
 
           {/* FILTER SECTION */}
+
           <div className="bg-gray-100 p-8 rounded-2xl shadow-sm border border-gray-200 mb-10">
+
             <h2 className="text-lg font-semibold text-black border-b pb-2 mb-6">
               Filter Notes
             </h2>
@@ -133,61 +325,9 @@ export default function ViewNotes() {
               <Select value={university} onChange={setUniversity} options={["MAKAUT"]} placeholder="Select University" />
               <Select value={degree} onChange={setDegree} options={["B.Tech"]} placeholder="Select Degree" />
               <Select value={stream} onChange={setStream} options={["CSE"]} placeholder="Select Stream" />
-              <Select value={year} onChange={setYear} options={["1", "2", "3", "4"]} placeholder="Select Year" />
-              <Select value={semester} onChange={setSemester} options={["1", "2", "3", "4", "5", "6", "7", "8"]} placeholder="Select Semester" />
-
-              <Select
-                value={subject}
-                onChange={setSubject}
-                options={[
-                  "MATHEMATICS-IA",
-                  "PHYSICS-I",
-                  "BASIC ELECTRICAL ENGINEERING",
-                  "CHEMISTRY-I",
-                  "MATHEMATICS-IIA",
-                  "PROGRAMMING FOR PROBLEM SOLVING",
-                  "ENGLISH",
-                  "ANALOG & DIGITAL ELECTRONICS",
-                  "DATA STRUCTURES & ALGORITHMS",
-                  "COMPUTER ORGANISATION",
-                  "MATHEMATICS-IIIA",
-                  "ECONOMICS FOR ENGINEERS",
-                  "DISCRETE MATHEMATICS",
-                  "COMPUTER ARCHITECTURE",
-                  "FORMAL LANGUAGE & AUTOMATA THEORY",
-                  "DESIGN & ANALYSIS OF ALGORITHMS",
-                  "BIOLOGY",
-                  "ENVIRONMENTAL SCIENCES",
-                  "SOFTWARE ENGINEERING",
-                  "COMPILER DESIGN",
-                  "OPERATING SYSTEMS",
-                  "OBJECT ORIENTED PROGRAMMING",
-                  "INTRODUCTION TO INDUSTRIAL MANAGEMENT",
-                  "ARTIFICIAL INTELLIGENCE",
-                  "CONSTITUTION OF INDIA",
-                  "DATABASE MANAGEMENT SYSTEMS",
-                  "COMPUTER NETWORKS",
-                  "DISTRIBUTED SYSTEMS",
-                  "IMAGE PROCESSING",
-                  "PATTERN RECOGNITION",
-                  "NUMERICAL METHODS",
-                  "RESEARCH METHODOLOGY",
-                  "DATA WAREHOUSING & DATA MINING",
-                  "HUMAN RESOURCE DEVELOPMENT & ORGANIZATIONAL BEHAVIOR",
-                  "MACHINE LEARNING",
-                  "SOFT COMPUTING",
-                  "ADHOC-SENSOR NETWORK",
-                  "OPERATION RESEARCH",
-                  "MULTIMEDIA TECHNOLOGY",
-                  "PROJECT MANAGEMENT & ENTREPENEURSHIP",
-                  "CRYPTOGRAPHY & NETWORK SECURITY",
-                  "INTERNET OF THINGS",
-                  "BIG DATA ANALYSIS",
-                  "MOBILE COMPUTING",
-                  "E-COMMERCE & ERP"
-                ]}
-                placeholder="Select Subject"
-              />
+              <Select value={year} onChange={setYear} options={["1","2","3","4"]} placeholder="Select Year" />
+              <Select value={semester} onChange={setSemester} options={["1","2","3","4","5","6","7","8"]} placeholder="Select Semester" />
+              <Select value={subject} onChange={setSubject} options={["MATHEMATICS-IA","PHYSICS-I","DATA STRUCTURES & ALGORITHMS","DATABASE MANAGEMENT SYSTEMS","OPERATING SYSTEMS","COMPUTER NETWORKS","MACHINE LEARNING"]} placeholder="Select Subject" />
             </div>
 
             <div className="mt-6">
@@ -198,9 +338,11 @@ export default function ViewNotes() {
                 Apply Filters
               </button>
             </div>
+
           </div>
 
-          {/* RESULTS */}
+          {/* NORMAL NOTES */}
+
           {loading ? (
             <div className="text-black">Loading notes...</div>
           ) : notes.length === 0 ? (
@@ -212,56 +354,69 @@ export default function ViewNotes() {
             </div>
           ) : (
             <div className="grid md:grid-cols-3 gap-8">
-              {notes.map((note) => (
-                <div
-                  key={note.id}
-                  className="bg-gray-50 p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition flex flex-col justify-between"
-                >
-                  <div>
-                    <h3 className="text-xl font-semibold text-black mb-2">
-                      {note.title}
-                    </h3>
 
-                    <div className="text-sm text-gray-600 mb-3 space-y-1">
-                      <p><span className="font-medium">University:</span> {note.university}</p>
-                      <p><span className="font-medium">Degree:</span> {note.degree} | {note.stream}</p>
-                      <p><span className="font-medium">Year:</span> {note.year} | Semester {note.semester}</p>
-                      <p><span className="font-medium">Subject:</span> {note.subject}</p>
+              {notes.map((note) => {
+
+                const purchased = purchasedNotes.includes(note.id);
+
+                return (
+                  <div
+                    key={note.id}
+                    className="bg-gray-50 p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition flex flex-col justify-between"
+                  >
+
+                    <div>
+
+                      <h3 className="text-xl font-semibold text-black mb-2">
+                        {note.title}
+                      </h3>
+                      <p className="text-gray-700 text-sm leading-relaxed mb-4 line-clamp-4">
+                        {note.description}
+                      </p>
+                      <div className="text-sm text-gray-600 mb-3 space-y-1">
+                        <p><span className="font-medium">Subject:</span> {note.subject}</p>
+                        <p><span className="font-medium">University:</span> {note.university}</p>
+                        <p><span className="font-medium">Degree:</span> {note.degree} | {note.stream}</p>
+                        <p><span className="font-medium">Year:</span> {note.year} | Semester {note.semester}</p>
+                      </div>
+
                     </div>
 
-                    <h3 className="text-sm font-semibold text-black">
-                      Description
-                    </h3>
-                    <p className="text-gray-700 text-sm leading-relaxed mb-4 line-clamp-4">
-                      {note.description}
-                    </p>
-                  </div>
+                    <div className="mt-4 flex justify-end">
 
-                  <div className="mt-4 flex items-center justify-between">
-                    <p className="font-semibold text-black">
-                      {note.price === 0 ? "Free" : `₹${note.price}`}
-                    </p>
+                      {note.price === 0 || purchased ? (
+                        <a
+                          href={note.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 transition"
+                        >
+                          View PDF
+                        </a>
+                      ) : (
+                        <button
+                          onClick={() => buyNote(note.id)}
+                          className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 transition"
+                        >
+                          Buy ₹{note.price}
+                        </button>
+                      )}
 
-                    <a
-                      href={note.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 transition"
-                    >
-                      View PDF
-                    </a>
+                    </div>
+
                   </div>
-                </div>
-              ))}
+                );
+
+              })}
+
             </div>
           )}
+
         </div>
       </div>
     </AuthGuard>
   );
 }
-
-/* ------------------ SELECT COMPONENT ------------------ */
 
 function Select({
   value,

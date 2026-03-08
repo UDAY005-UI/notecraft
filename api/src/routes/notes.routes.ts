@@ -1,6 +1,7 @@
 import express from "express";
 import {
   fetchNotes,
+  getMyPurchases,
   uploadNote,
 } from "../controllers/notes.controller.js";
 import { clerkAuth } from "../middlewares/clerkAuth.js";
@@ -16,6 +17,9 @@ router.get(
   clerkAuth,
   fetchNotes
 );
+
+
+router.get("/my-purchases", clerkAuth, getMyPurchases);
 
 /* ---------------- UPLOAD NOTE ---------------- */
 

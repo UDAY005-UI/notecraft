@@ -122,3 +122,49 @@ export async function uploadNote(
     return res.status(500).json({ message: "Upload failed" });
   }
 }
+
+export const getMyPurchases = async (req: Request, res: Response) => {
+  try {
+
+    const { userId } = getAuth(req)
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId }
+    })
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" })
+    }
+
+    const purchases = await prisma.purchase.findMany({
+      where: {
+        userId: user.id,
+        paymentStatus: "SUCCESS"
+      },
+      include: {
+        note: true
+      }
+    })
+
+    const notes = purchases.map(p => p.note)
+
+    return res.status(200).json({
+      success: true,
+      data: notes
+    })
+
+  } catch (error) {
+
+    console.error(error)
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch purchased notes"
+    })
+
+  }
+}

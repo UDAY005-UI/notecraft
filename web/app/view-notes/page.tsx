@@ -28,7 +28,7 @@ interface Note {
   createdAt: string;
 }
 
-/* ─── SELECT COMPONENT — with hover/focus effects ─── */
+/* ─── SELECT COMPONENT ─── */
 function Select({
   value,
   onChange,
@@ -57,23 +57,222 @@ function Select({
   );
 }
 
+/* ─── NOTE CARD with expand/collapse ─── */
+function NoteCard({
+  note,
+  index,
+  purchased,
+  onBuy,
+}: {
+  note: Note;
+  index: number;
+  purchased: boolean;
+  onBuy: (id: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <motion.div
+      custom={index}
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      whileHover={{
+        borderColor: purchased ? "rgba(52,211,153,0.42)" : "rgba(96,165,250,0.35)",
+        boxShadow: purchased
+          ? "0 8px 28px rgba(52,211,153,0.09)"
+          : "0 8px 28px rgba(96,165,250,0.10)",
+        transition: { duration: 0.2 },
+      }}
+      className={`note-card${purchased ? " purchased" : ""}`}
+      onClick={() => setExpanded((v) => !v)}
+      style={{ cursor: "pointer" }}
+    >
+      <div>
+        {/* Badge */}
+        {note.price === 0
+          ? <div className="badge-free">● Free</div>
+          : purchased
+            ? <div className="badge-owned">✓ Owned</div>
+            : <div className="badge-paid">🔒 ₹{note.price}</div>
+        }
+
+        {/* Title */}
+        <div className="note-title">{note.title}</div>
+
+        {/* Description — clamp to 2 lines when collapsed */}
+        <div
+          className="note-desc"
+          style={{
+            display: "-webkit-box",
+            WebkitBoxOrient: "vertical",
+            WebkitLineClamp: expanded ? "unset" : 2,
+            overflow: "hidden",
+            transition: "all 0.3s ease",
+          }}
+        >
+          {note.description}
+        </div>
+
+        {/* Expand/collapse hint */}
+        <div style={{
+          fontSize: 10,
+          color: "rgba(96,165,250,0.5)",
+          marginTop: 4,
+          marginBottom: expanded ? "0.75rem" : 0,
+          letterSpacing: "0.3px",
+        }}>
+          {expanded ? "▲ less" : "▼ more"}
+        </div>
+
+        {/* Meta — only show when expanded */}
+        <AnimatePresence initial={false}>
+          {expanded && (
+            <motion.div
+              key="meta"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              style={{ overflow: "hidden" }}
+            >
+              <div className="note-meta" style={{ marginTop: "0.5rem" }}>
+                <div className="note-meta-row"><span>Subject:</span> {note.subject}</div>
+                <div className="note-meta-row"><span>University:</span> {note.university}</div>
+                <div className="note-meta-row"><span>Degree:</span> {note.degree} · {note.stream}</div>
+                <div className="note-meta-row"><span>Year:</span> {note.year} · <span>Semester:</span> {note.semester}</div>
+              </div>
+
+              {/* Action button */}
+              <div
+                style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.85rem" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {note.price === 0 || purchased ? (
+                  <motion.a
+                    href={note.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-view"
+                    whileHover={{ scale: 1.06 }}
+                    whileTap={{ scale: 0.94 }}
+                  >
+                    View PDF ↗
+                  </motion.a>
+                ) : (
+                  <motion.button
+                    onClick={() => onBuy(note.id)}
+                    className="btn-buy"
+                    whileHover={{ scale: 1.06 }}
+                    whileTap={{ scale: 0.94 }}
+                  >
+                    Buy ₹{note.price}
+                  </motion.button>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── PURCHASED NOTE CARD with expand/collapse ─── */
+function PurchasedNoteCard({ note, index }: { note: Note; index: number }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <motion.div
+      key={note.id}
+      custom={index}
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      whileHover={{
+        y: -4,
+        borderColor: "rgba(52,211,153,0.45)",
+        boxShadow: "0 8px 28px rgba(52,211,153,0.10)",
+        transition: { duration: 0.2 },
+      }}
+      className="note-card purchased"
+      onClick={() => setExpanded((v) => !v)}
+      style={{ cursor: "pointer" }}
+    >
+      <div>
+        <div className="badge-owned">✓ Owned</div>
+        <div className="note-title">{note.title}</div>
+
+        <div
+          className="note-desc"
+          style={{
+            display: "-webkit-box",
+            WebkitBoxOrient: "vertical",
+            WebkitLineClamp: expanded ? "unset" : 2,
+            overflow: "hidden",
+          }}
+        >
+          {note.description}
+        </div>
+
+        <div style={{ fontSize: 10, color: "rgba(96,165,250,0.5)", marginTop: 4, letterSpacing: "0.3px" }}>
+          {expanded ? "▲ less" : "▼ more"}
+        </div>
+
+        <AnimatePresence initial={false}>
+          {expanded && (
+            <motion.div
+              key="meta"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              style={{ overflow: "hidden" }}
+            >
+              <div className="note-meta" style={{ marginTop: "0.5rem" }}>
+                <div className="note-meta-row"><span>University:</span> {note.university}</div>
+                <div className="note-meta-row"><span>Degree:</span> {note.degree} · {note.stream}</div>
+                <div className="note-meta-row"><span>Year:</span> {note.year} · <span>Semester:</span> {note.semester}</div>
+                <div className="note-meta-row"><span>Subject:</span> {note.subject}</div>
+              </div>
+              <div
+                style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.85rem" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <motion.a
+                  href={note.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-view"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.96 }}
+                >
+                  View PDF ↗
+                </motion.a>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+}
+
 /* ─── ANIMATION VARIANTS ─── */
 const fadeUp: import("framer-motion").Variants = {
   hidden: { opacity: 0, y: 22 },
   visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as [number,number,number,number], delay: i * 0.07 },
+    opacity: 1, y: 0,
+    transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay: i * 0.07 },
   }),
 };
 
 const cardVariants: import("framer-motion").Variants = {
   hidden: { opacity: 0, y: 18, scale: 0.97 },
   visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number,number,number,number], delay: i * 0.06 },
+    opacity: 1, y: 0, scale: 1,
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay: i * 0.06 },
   }),
   exit: { opacity: 0, scale: 0.95, transition: { duration: 0.2 } },
 };
@@ -85,13 +284,11 @@ const stateBoxVariants: import("framer-motion").Variants = {
 };
 
 export default function ViewNotes() {
-
   const { getToken } = useAuth();
   const { isLoaded, isSignedIn } = useUser();
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(false);
-
   const [purchasedNotes, setPurchasedNotes] = useState<string[]>([]);
   const [purchasedNotesData, setPurchasedNotesData] = useState<Note[]>([]);
 
@@ -101,8 +298,6 @@ export default function ViewNotes() {
   const [year, setYear] = useState("");
   const [semester, setSemester] = useState("");
   const [subject, setSubject] = useState("");
-
-  // ── ALL LOGIC UNCHANGED FROM ORIGINAL ──
 
   const loadRazorpay = () => {
     return new Promise<boolean>((resolve) => {
@@ -141,11 +336,7 @@ export default function ViewNotes() {
         `${process.env.NEXT_PUBLIC_API_URL}/notes/get-notes`,
         { params: filters || {}, headers: { Authorization: `Bearer ${token}` } }
       );
-      if (response.data.success) {
-        setNotes(response.data.data);
-      } else {
-        setNotes([]);
-      }
+      setNotes(response.data.success ? response.data.data : []);
     } catch (error) {
       console.error("Error fetching notes:", error);
       setNotes([]);
@@ -162,7 +353,6 @@ export default function ViewNotes() {
         `${process.env.NEXT_PUBLIC_API_URL}/notes/my-purchases`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log(res);
       const purchased = res.data.data || [];
       setPurchasedNotesData(purchased);
       setPurchasedNotes(purchased.map((n: Note) => n.id));
@@ -226,7 +416,6 @@ export default function ViewNotes() {
   return (
     <AuthGuard>
       <>
-        {/* ── STYLES — exact same theme as landing page ── */}
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
           body{font-family:'Inter',-apple-system,sans-serif;background:#050814;color:#e8eaf6;overflow-x:hidden;}
@@ -237,39 +426,32 @@ export default function ViewNotes() {
               radial-gradient(ellipse 60% 45% at 10% 80%,rgba(15,30,90,0.35) 0%,transparent 55%),
               radial-gradient(ellipse 50% 40% at 90% 70%,rgba(20,40,110,0.3) 0%,transparent 55%),
               linear-gradient(180deg,#080d1e 0%,#060a18 40%,#040810 100%);
-            min-height:100vh;position:relative;padding-top: 50px;}
+            min-height:100vh;position:relative;padding-top:50px;}
 
           .ceiling-light{position:absolute;top:2%;left:20%;right:20%;height:5px;background:linear-gradient(90deg,transparent,rgba(96,165,250,0.18) 30%,rgba(147,197,253,0.25) 50%,rgba(96,165,250,0.18) 70%,transparent);border-radius:3px;box-shadow:0 0 60px 25px rgba(96,165,250,0.08);pointer-events:none;}
 
-          /* PAGE WRAP */
           .home-wrap{position:relative;z-index:10;max-width:1000px;margin:0 auto;padding:2rem 1.75rem 3rem;}
 
-          /* PAGE HEADER */
           .page-header{margin-bottom:1.75rem;}
           .page-eyebrow{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(96,165,250,.75);font-weight:500;margin-bottom:.4rem;}
           .page-title{font-size:clamp(22px,3.5vw,32px);font-weight:300;letter-spacing:-.6px;color:#e8eaf6;margin-bottom:.4rem;}
           .page-title em{font-style:normal;background:linear-gradient(135deg,#93c5fd,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 
-          /* SECTION LABEL */
           .section-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(96,165,250,.75);font-weight:500;margin-bottom:.6rem;}
           .section-h2{font-size:16px;font-weight:500;color:#e8eaf6;margin-bottom:1rem;letter-spacing:-.2px;}
 
-          /* GLASS PANEL */
           .g-panel{background:rgba(10,20,55,0.65);border:1px solid rgba(96,165,250,0.16);backdrop-filter:blur(22px);border-radius:16px;padding:1.5rem;transition:border-color .22s,box-shadow .22s;}
           .g-panel:hover{border-color:rgba(96,165,250,0.32);box-shadow:0 4px 36px rgba(96,165,250,0.08);}
 
-          /* FILTER GRID */
           .filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
           @media(min-width:600px){.filter-grid{grid-template-columns:repeat(3,1fr);}}
           @media(min-width:900px){.filter-grid{grid-template-columns:repeat(6,1fr);}}
 
-          /* SELECT WRAPPER */
           .select-wrap{position:relative;width:100%;}
           .select-arrow{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:rgba(96,165,250,0.4);pointer-events:none;transition:color .18s,transform .22s;}
           .select-wrap:hover .select-arrow{color:rgba(96,165,250,0.9);}
           .select-wrap:focus-within .select-arrow{color:#60a5fa;transform:translateY(-50%) rotate(180deg);}
 
-          /* FILTER SELECT */
           .filter-select{width:100%;background:rgba(10,20,55,0.55);border:1px solid rgba(96,165,250,0.16);border-radius:10px;padding:9px 28px 9px 12px;font-size:12px;color:rgba(180,195,230,0.45);font-family:inherit;outline:none;cursor:pointer;appearance:none;backdrop-filter:blur(14px);transition:border-color .18s,background .18s,box-shadow .18s,color .18s;}
           .filter-select.has-value{color:#e8eaf6;}
           .filter-select:hover{border-color:rgba(96,165,250,0.42);background:rgba(16,30,78,0.72);box-shadow:0 0 14px rgba(96,165,250,0.08);}
@@ -277,54 +459,57 @@ export default function ViewNotes() {
           .filter-select option{background:#08142a;color:#e8eaf6;}
           .filter-select option:first-child{color:rgba(180,195,230,0.45);}
 
-          /* APPLY BUTTON */
           .apply-btn{margin-top:1rem;padding:9px 22px;background:rgba(96,165,250,0.18);border:1px solid rgba(96,165,250,0.4);color:#60a5fa;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s;}
           .apply-btn:hover{background:rgba(96,165,250,0.3);box-shadow:0 0 18px rgba(96,165,250,0.18);}
 
-          /* NOTES GRID */
-          .notes-grid{display:grid;grid-template-columns:1fr;gap:12px;}
-          @media(min-width:540px){.notes-grid{grid-template-columns:1fr 1fr;}}
-          @media(min-width:900px){.notes-grid{grid-template-columns:repeat(3,1fr);}}
+          .notes-grid{columns:1;gap:10px;}
+@media(min-width:540px){.notes-grid{columns:2;column-gap:10px;}}
+@media(min-width:900px){.notes-grid{columns:3;column-gap:10px;}}
+.notes-grid > *{break-inside:avoid;margin-bottom:10px;}
 
-          /* NOTE CARD */
-          .note-card{background:rgba(10,20,55,0.6);border:1px solid rgba(96,165,250,0.14);backdrop-filter:blur(14px);border-radius:14px;padding:1.25rem;display:flex;flex-direction:column;justify-content:space-between;cursor:default;}
-          .note-card.purchased{border-color:rgba(52,211,153,0.25);background:rgba(10,35,25,0.55);}
 
-          .note-title{font-size:14px;font-weight:500;color:#e8eaf6;margin-bottom:.5rem;line-height:1.4;}
-          .note-desc{font-size:12px;color:rgba(200,210,240,0.6);line-height:1.6;margin-bottom:.85rem;}
-          .note-meta{display:flex;flex-direction:column;gap:3px;margin-bottom:.85rem;}
+          /* CARD — compact by default */
+          .note-card{
+            background:rgba(10,20,55,0.6);
+            border:1px solid rgba(96,165,250,0.14);
+            backdrop-filter:blur(14px);
+            border-radius:14px;
+            padding:1rem 1.1rem;
+            display:flex;
+            flex-direction:column;
+            transition: border-color 0.2s, box-shadow 0.2s;
+          }
+          .note-card.purchased{border-color:rgba(52,211,153,0.2);background:rgba(10,35,25,0.5);}
+
+          .note-title{font-size:13px;font-weight:500;color:#e8eaf6;margin-bottom:.35rem;line-height:1.4;}
+          .note-desc{font-size:11.5px;color:rgba(200,210,240,0.6);line-height:1.6;margin-bottom:.3rem;}
+          .note-meta{display:flex;flex-direction:column;gap:3px;margin-bottom:.75rem;}
           .note-meta-row{font-size:11px;color:rgba(180,195,230,0.45);}
           .note-meta-row span{color:rgba(200,210,240,0.65);font-weight:500;}
 
-          /* BADGES */
-          .badge-free{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 9px;border-radius:18px;font-weight:500;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.3);color:#34d399;margin-bottom:.6rem;}
-          .badge-paid{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 9px;border-radius:18px;font-weight:500;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.3);color:#a78bfa;margin-bottom:.6rem;}
-          .badge-owned{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 9px;border-radius:18px;font-weight:500;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.3);color:#34d399;margin-bottom:.6rem;}
+          .badge-free{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 9px;border-radius:18px;font-weight:500;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.3);color:#34d399;margin-bottom:.5rem;}
+          .badge-paid{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 9px;border-radius:18px;font-weight:500;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.3);color:#a78bfa;margin-bottom:.5rem;}
+          .badge-owned{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 9px;border-radius:18px;font-weight:500;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.3);color:#34d399;margin-bottom:.5rem;}
 
-          /* ACTION BUTTONS */
-          .btn-view{padding:8px 18px;background:rgba(96,165,250,0.16);border:1px solid rgba(96,165,250,0.35);color:#60a5fa;border-radius:18px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-block;transition:all .18s;}
+          .btn-view{padding:7px 16px;background:rgba(96,165,250,0.16);border:1px solid rgba(96,165,250,0.35);color:#60a5fa;border-radius:18px;font-size:11.5px;font-weight:500;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-block;transition:all .18s;}
           .btn-view:hover{background:rgba(96,165,250,0.28);box-shadow:0 0 14px rgba(96,165,250,0.18);}
-          .btn-buy{padding:8px 18px;background:rgba(167,139,250,0.16);border:1px solid rgba(167,139,250,0.35);color:#a78bfa;border-radius:18px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .18s;}
+          .btn-buy{padding:7px 16px;background:rgba(167,139,250,0.16);border:1px solid rgba(167,139,250,0.35);color:#a78bfa;border-radius:18px;font-size:11.5px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .18s;}
           .btn-buy:hover{background:rgba(167,139,250,0.28);box-shadow:0 0 14px rgba(167,139,250,0.18);}
 
-          /* EMPTY / LOADING */
           .state-box{background:rgba(10,20,55,0.6);border:1px solid rgba(96,165,250,0.14);backdrop-filter:blur(14px);border-radius:14px;padding:2.5rem;text-align:center;}
           .state-emoji{font-size:32px;margin-bottom:.75rem;}
           .state-title{font-size:15px;font-weight:500;color:#e8eaf6;margin-bottom:.4rem;}
           .state-sub{font-size:12px;color:rgba(200,210,240,0.6);line-height:1.6;}
 
-          /* DIVIDER */
           .g-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(96,165,250,0.15) 30%,rgba(96,165,250,0.15) 70%,transparent);margin:2rem 0;}
-
         `}</style>
 
         <div className="home-scene">
           <div className="ceiling-light" />
 
-          {/* ── PAGE CONTENT ── */}
           <div className="home-wrap">
 
-            {/* PAGE HEADER — fade up on mount */}
+            {/* PAGE HEADER */}
             <motion.div
               className="page-header"
               initial={{ opacity: 0, y: 16 }}
@@ -350,44 +535,7 @@ export default function ViewNotes() {
                   <div className="section-h2">Purchased Notes</div>
                   <div className="notes-grid">
                     {purchasedNotesData.map((note, i) => (
-                      <motion.div
-                        key={note.id}
-                        custom={i}
-                        variants={cardVariants}
-                        initial="hidden"
-                        animate="visible"
-                        whileHover={{
-                          y: -5,
-                          borderColor: "rgba(52,211,153,0.45)",
-                          boxShadow: "0 10px 32px rgba(52,211,153,0.10)",
-                          transition: { duration: 0.2 },
-                        }}
-                        className="note-card purchased"
-                      >
-                        <div>
-                          <div className="badge-owned">✓ Owned</div>
-                          <div className="note-title">{note.title}</div>
-                          <div className="note-desc">{note.description}</div>
-                          <div className="note-meta">
-                            <div className="note-meta-row"><span>University:</span> {note.university}</div>
-                            <div className="note-meta-row"><span>Degree:</span> {note.degree} · {note.stream}</div>
-                            <div className="note-meta-row"><span>Year:</span> {note.year} · <span>Semester:</span> {note.semester}</div>
-                            <div className="note-meta-row"><span>Subject:</span> {note.subject}</div>
-                          </div>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                          <motion.a
-                            href={note.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-view"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.96 }}
-                          >
-                            View PDF ↗
-                          </motion.a>
-                        </div>
-                      </motion.div>
+                      <PurchasedNoteCard key={note.id} note={note} index={i} />
                     ))}
                   </div>
                   <div className="g-divider" />
@@ -410,22 +558,24 @@ export default function ViewNotes() {
                 <Select value={stream} onChange={setStream} options={["CSE"]} placeholder="Stream" />
                 <Select value={year} onChange={setYear} options={["1", "2", "3", "4"]} placeholder="Year" />
                 <Select value={semester} onChange={setSemester} options={["1", "2", "3", "4", "5", "6", "7", "8"]} placeholder="Semester" />
-                <Select value={subject} onChange={setSubject} options={["MATHEMATICS-IA","PHYSICS-I","BASIC ELECTRICAL ENGINEERING","CHEMISTRY-I",
-                        "MATHEMATICS-IIA","PROGRAMMING FOR PROBLEM SOLVING","ENGLISH",
-                        "ANALOG & DIGITAL ELECTRONICS","DATA STRUCTURES & ALGORITHMS","COMPUTER ORGANISATION",
-                        "MATHEMATICS-IIIA","ECONOMICS FOR ENGINEERS","DISCRETE MATHEMATICS",
-                        "COMPUTER ARCHITECTURE","FORMAL LANGUAGE & AUTOMATA THEORY",
-                        "DESIGN & ANALYSIS OF ALGORITHMS","BIOLOGY","ENVIRONMENTAL SCIENCES",
-                        "SOFTWARE ENGINEERING","COMPILER DESIGN","OPERATING SYSTEMS",
-                        "OBJECT ORIENTED PROGRAMMING","INTRODUCTION TO INDUSTRIAL MANAGEMENT",
-                        "ARTIFICIAL INTELLIGENCE","CONSTITUTION OF INDIA","DATABASE MANAGEMENT SYSTEMS",
-                        "COMPUTER NETWORKS","DISTRIBUTED SYSTEMS","IMAGE PROCESSING","PATTERN RECOGNITION",
-                        "NUMERICAL METHODS","RESEARCH METHODOLOGY","DATA WAREHOUSING & DATA MINING",
-                        "HUMAN RESOURCE DEVELOPMENT & ORGANIZATIONAL BEHAVIOR","MACHINE LEARNING",
-                        "SOFT COMPUTING","ADHOC-SENSOR NETWORK","OPERATION RESEARCH",
-                        "MULTIMEDIA TECHNOLOGY","PROJECT MANAGEMENT & ENTREPENEURSHIP",
-                        "CRYPTOGRAPHY & NETWORK SECURITY","INTERNET OF THINGS","BIG DATA ANALYSIS",
-                        "MOBILE COMPUTING","E-COMMERCE & ERP",]} placeholder="Subject" />
+                <Select value={subject} onChange={setSubject} options={[
+                  "MATHEMATICS-IA","PHYSICS-I","BASIC ELECTRICAL ENGINEERING","CHEMISTRY-I",
+                  "MATHEMATICS-IIA","PROGRAMMING FOR PROBLEM SOLVING","ENGLISH",
+                  "ANALOG & DIGITAL ELECTRONICS","DATA STRUCTURES & ALGORITHMS","COMPUTER ORGANISATION",
+                  "MATHEMATICS-IIIA","ECONOMICS FOR ENGINEERS","DISCRETE MATHEMATICS",
+                  "COMPUTER ARCHITECTURE","FORMAL LANGUAGE & AUTOMATA THEORY",
+                  "DESIGN & ANALYSIS OF ALGORITHMS","BIOLOGY","ENVIRONMENTAL SCIENCES",
+                  "SOFTWARE ENGINEERING","COMPILER DESIGN","OPERATING SYSTEMS",
+                  "OBJECT ORIENTED PROGRAMMING","INTRODUCTION TO INDUSTRIAL MANAGEMENT",
+                  "ARTIFICIAL INTELLIGENCE","CONSTITUTION OF INDIA","DATABASE MANAGEMENT SYSTEMS",
+                  "COMPUTER NETWORKS","DISTRIBUTED SYSTEMS","IMAGE PROCESSING","PATTERN RECOGNITION",
+                  "NUMERICAL METHODS","RESEARCH METHODOLOGY","DATA WAREHOUSING & DATA MINING",
+                  "HUMAN RESOURCE DEVELOPMENT & ORGANIZATIONAL BEHAVIOR","MACHINE LEARNING",
+                  "SOFT COMPUTING","ADHOC-SENSOR NETWORK","OPERATION RESEARCH",
+                  "MULTIMEDIA TECHNOLOGY","PROJECT MANAGEMENT & ENTREPENEURSHIP",
+                  "CRYPTOGRAPHY & NETWORK SECURITY","INTERNET OF THINGS","BIG DATA ANALYSIS",
+                  "MOBILE COMPUTING","E-COMMERCE & ERP",
+                ]} placeholder="Subject" />
               </div>
               <motion.button
                 onClick={handleApplyFilters}
@@ -481,77 +631,21 @@ export default function ViewNotes() {
                 >
                   <div className="section-label">All notes</div>
                   <div className="notes-grid">
-                    {notes.map((note, i) => {
-                      const purchased = purchasedNotes.includes(note.id);
-                      return (
-                        <motion.div
-                          key={note.id}
-                          custom={i}
-                          variants={cardVariants}
-                          initial="hidden"
-                          animate="visible"
-                          exit="exit"
-                          whileHover={{
-                            y: -5,
-                            borderColor: purchased
-                              ? "rgba(52,211,153,0.42)"
-                              : "rgba(96,165,250,0.35)",
-                            boxShadow: purchased
-                              ? "0 10px 30px rgba(52,211,153,0.09)"
-                              : "0 10px 30px rgba(96,165,250,0.10)",
-                            transition: { duration: 0.2 },
-                          }}
-                          className={`note-card${purchased ? " purchased" : ""}`}
-                        >
-                          <div>
-                            {note.price === 0
-                              ? <div className="badge-free">● Free</div>
-                              : purchased
-                                ? <div className="badge-owned">✓ Owned</div>
-                                : <div className="badge-paid">🔒 ₹{note.price}</div>
-                            }
-                            <div className="note-title">{note.title}</div>
-                            <div className="note-desc">{note.description}</div>
-                            <div className="note-meta">
-                              <div className="note-meta-row"><span>Subject:</span> {note.subject}</div>
-                              <div className="note-meta-row"><span>University:</span> {note.university}</div>
-                              <div className="note-meta-row"><span>Degree:</span> {note.degree} · {note.stream}</div>
-                              <div className="note-meta-row"><span>Year:</span> {note.year} · <span>Semester:</span> {note.semester}</div>
-                            </div>
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                            {note.price === 0 || purchased ? (
-                              <motion.a
-                                href={note.fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-view"
-                                whileHover={{ scale: 1.06 }}
-                                whileTap={{ scale: 0.94 }}
-                              >
-                                View PDF ↗
-                              </motion.a>
-                            ) : (
-                              <motion.button
-                                onClick={() => buyNote(note.id)}
-                                className="btn-buy"
-                                whileHover={{ scale: 1.06 }}
-                                whileTap={{ scale: 0.94 }}
-                              >
-                                Buy ₹{note.price}
-                              </motion.button>
-                            )}
-                          </div>
-                        </motion.div>
-                      );
-                    })}
+                    {notes.map((note, i) => (
+                      <NoteCard
+                        key={note.id}
+                        note={note}
+                        index={i}
+                        purchased={purchasedNotes.includes(note.id)}
+                        onBuy={buyNote}
+                      />
+                    ))}
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
           </div>
-
         </div>
       </>
     </AuthGuard>

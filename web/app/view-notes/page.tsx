@@ -334,7 +334,7 @@ export default function ViewNotes() {
       if (!token) return;
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/notes/get-notes`,
-        { params: filters || {}, headers: { Authorization: `Bearer ${token}` } }
+        { params: { limit: 1000, ...filters }, headers: { Authorization: `Bearer ${token}` } }
       );
       setNotes(response.data.success ? response.data.data : []);
     } catch (error) {
@@ -417,7 +417,7 @@ export default function ViewNotes() {
     <AuthGuard>
       <>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
           body{font-family:'Inter',-apple-system,sans-serif;background:#050814;color:#e8eaf6;overflow-x:hidden;}
 
           .home-scene{
@@ -435,7 +435,7 @@ export default function ViewNotes() {
           .page-header{margin-bottom:1.75rem;}
           .page-eyebrow{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(96,165,250,.75);font-weight:500;margin-bottom:.4rem;}
           .page-title{font-size:clamp(22px,3.5vw,32px);font-weight:300;letter-spacing:-.6px;color:#e8eaf6;margin-bottom:.4rem;}
-          .page-title em{font-style:normal;background:linear-gradient(135deg,#93c5fd,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+          .page-title strong{font-weight:700;background:linear-gradient(135deg,#93c5fd,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 
           .section-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(96,165,250,.75);font-weight:500;margin-bottom:.6rem;}
           .section-h2{font-size:16px;font-weight:500;color:#e8eaf6;margin-bottom:1rem;letter-spacing:-.2px;}
@@ -462,11 +462,10 @@ export default function ViewNotes() {
           .apply-btn{margin-top:1rem;padding:9px 22px;background:rgba(96,165,250,0.18);border:1px solid rgba(96,165,250,0.4);color:#60a5fa;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s;}
           .apply-btn:hover{background:rgba(96,165,250,0.3);box-shadow:0 0 18px rgba(96,165,250,0.18);}
 
-          .notes-grid{columns:1;gap:10px;}
-@media(min-width:540px){.notes-grid{columns:2;column-gap:10px;}}
-@media(min-width:900px){.notes-grid{columns:3;column-gap:10px;}}
-.notes-grid > *{break-inside:avoid;margin-bottom:10px;}
-
+          .notes-grid{column-count:1;column-gap:10px;}
+          @media(min-width:540px){.notes-grid{column-count:2;}}
+          @media(min-width:900px){.notes-grid{column-count:3;}}
+          .notes-grid > *{display:inline-block;width:100%;margin-bottom:10px;break-inside:avoid;vertical-align:top;}
 
           /* CARD — compact by default */
           .note-card{
@@ -517,7 +516,8 @@ export default function ViewNotes() {
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             >
               <div className="page-eyebrow">Study material</div>
-              <h1 className="page-title">Browse <em>Notes</em></h1>
+              {/* ── "Notes" is now bold ── */}
+              <h1 className="page-title"><strong style={{background:"none",WebkitTextFillColor:"#ffffff",color:"#ffffff"}}>Browse</strong> <strong>Notes</strong></h1>
             </motion.div>
 
             {/* ── PURCHASED NOTES ── */}
@@ -587,7 +587,7 @@ export default function ViewNotes() {
               </motion.button>
             </motion.div>
 
-            {/* ── NOTES ── */}
+            {/* ── ALL NOTES — renders every note, no limit ── */}
             <AnimatePresence mode="wait">
               {loading ? (
                 <motion.div
@@ -629,7 +629,9 @@ export default function ViewNotes() {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.25 }}
                 >
-                  <div className="section-label">All notes</div>
+                  <div className="section-label">
+                    All notes · <span style={{ color: "rgba(200,210,240,0.5)", textTransform: "none", letterSpacing: 0 }}>{notes.length} result{notes.length !== 1 ? "s" : ""}</span>
+                  </div>
                   <div className="notes-grid">
                     {notes.map((note, i) => (
                       <NoteCard

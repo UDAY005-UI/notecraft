@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { AuthGuard } from "../components/AuthWrapper";
 import { useAuth, useUser } from "@clerk/nextjs";
+import { motion, AnimatePresence } from "framer-motion";
 
 declare global {
   interface Window {
@@ -27,6 +28,62 @@ interface Note {
   createdAt: string;
 }
 
+/* ─── SELECT COMPONENT — with hover/focus effects ─── */
+function Select({
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: string[];
+  placeholder: string;
+}) {
+  return (
+    <div className="select-wrap">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`filter-select${value ? " has-value" : ""}`}
+      >
+        <option value="">{placeholder}</option>
+        {options.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+      <span className="select-arrow">▾</span>
+    </div>
+  );
+}
+
+/* ─── ANIMATION VARIANTS ─── */
+const fadeUp: import("framer-motion").Variants = {
+  hidden: { opacity: 0, y: 22 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as [number,number,number,number], delay: i * 0.07 },
+  }),
+};
+
+const cardVariants: import("framer-motion").Variants = {
+  hidden: { opacity: 0, y: 18, scale: 0.97 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number,number,number,number], delay: i * 0.06 },
+  }),
+  exit: { opacity: 0, scale: 0.95, transition: { duration: 0.2 } },
+};
+
+const stateBoxVariants: import("framer-motion").Variants = {
+  hidden: { opacity: 0, scale: 0.96 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.35, ease: "easeOut" } },
+  exit: { opacity: 0, scale: 0.96, transition: { duration: 0.2 } },
+};
+
 export default function ViewNotes() {
 
   const { getToken } = useAuth();
@@ -45,402 +102,458 @@ export default function ViewNotes() {
   const [semester, setSemester] = useState("");
   const [subject, setSubject] = useState("");
 
+  // ── ALL LOGIC UNCHANGED FROM ORIGINAL ──
+
   const loadRazorpay = () => {
     return new Promise<boolean>((resolve) => {
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
-
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
-
       document.body.appendChild(script);
     });
   };
 
   useEffect(() => {
-
     if (!isLoaded || !isSignedIn) return;
-
     const syncUser = async () => {
-
       try {
-
         const token = await getToken();
         if (!token) return;
-
         await axios.post(
           `${process.env.NEXT_PUBLIC_API_URL}/users/create`,
           {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-
       } catch (err) {
-
         console.error("User sync error:", err);
-
       }
-
     };
-
     syncUser();
-
   }, [isLoaded, isSignedIn, getToken]);
 
   const fetchNotes = async (filters?: Record<string, string>) => {
-
     try {
-
       setLoading(true);
-
       const token = await getToken();
       if (!token) return;
-
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/notes/get-notes`,
-        {
-          params: filters || {},
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { params: filters || {}, headers: { Authorization: `Bearer ${token}` } }
       );
-
       if (response.data.success) {
         setNotes(response.data.data);
       } else {
         setNotes([]);
       }
-
     } catch (error) {
-
       console.error("Error fetching notes:", error);
       setNotes([]);
-
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
   const fetchPurchasedNotes = async () => {
-
     try {
-
       const token = await getToken();
       if (!token) return;
-
       const res = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/notes/my-purchases`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       console.log(res);
       const purchased = res.data.data || [];
-
       setPurchasedNotesData(purchased);
       setPurchasedNotes(purchased.map((n: Note) => n.id));
-
     } catch (err) {
-
       console.error("Purchase fetch error:", err);
-
     }
-
   };
 
   useEffect(() => {
-
     if (!isLoaded || !isSignedIn) return;
-
     fetchNotes();
     fetchPurchasedNotes();
-
   }, [isLoaded, isSignedIn]);
 
   const buyNote = async (noteId: string) => {
-
     try {
-
       const token = await getToken();
       if (!token) return;
-
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/payment/create-order`,
         { noteId },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
       const data = res.data;
-
       const loaded = await loadRazorpay();
-
-      if (!loaded) {
-        alert("Payment gateway failed to load");
-        return;
-      }
-
+      if (!loaded) { alert("Payment gateway failed to load"); return; }
       const options = {
-
         key: data.key,
         amount: data.amount,
         currency: data.currency,
         order_id: data.orderId,
-
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         handler: async function (response: any) {
-
           await axios.post(
             `${process.env.NEXT_PUBLIC_API_URL}/payment/verify`,
-            {
-              ...response,
-              purchaseId: data.purchaseId,
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
+            { ...response, purchaseId: data.purchaseId },
+            { headers: { Authorization: `Bearer ${token}` } }
           );
-
           await fetchPurchasedNotes();
-
           alert("Payment successful!");
-
         },
-
       };
-
       const rzp = new window.Razorpay(options);
       rzp.open();
-
     } catch (error) {
-
       console.error("Payment error:", error);
-
     }
-
   };
 
   const handleApplyFilters = () => {
-
     const params: Record<string, string> = {};
-
     if (university) params.university = university;
     if (degree) params.degree = degree;
     if (stream) params.stream = stream;
     if (year) params.year = year;
     if (semester) params.semester = semester;
     if (subject) params.subject = subject;
-
     fetchNotes(params);
-
   };
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-white py-12 px-4">
-        <div className="max-w-6xl mx-auto">
+      <>
+        {/* ── STYLES — exact same theme as landing page ── */}
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+          body{font-family:'Inter',-apple-system,sans-serif;background:#050814;color:#e8eaf6;overflow-x:hidden;}
 
-          {/* PURCHASED NOTES AT TOP */}
+          .home-scene{
+            background:
+              radial-gradient(ellipse 100% 55% at 50% -5%,rgba(30,60,140,0.55) 0%,transparent 65%),
+              radial-gradient(ellipse 60% 45% at 10% 80%,rgba(15,30,90,0.35) 0%,transparent 55%),
+              radial-gradient(ellipse 50% 40% at 90% 70%,rgba(20,40,110,0.3) 0%,transparent 55%),
+              linear-gradient(180deg,#080d1e 0%,#060a18 40%,#040810 100%);
+            min-height:100vh;position:relative;padding-top: 50px;}
 
-          {purchasedNotesData.length > 0 && (
-            <div className="mb-12">
+          .ceiling-light{position:absolute;top:2%;left:20%;right:20%;height:5px;background:linear-gradient(90deg,transparent,rgba(96,165,250,0.18) 30%,rgba(147,197,253,0.25) 50%,rgba(96,165,250,0.18) 70%,transparent);border-radius:3px;box-shadow:0 0 60px 25px rgba(96,165,250,0.08);pointer-events:none;}
 
-              <h2 className="text-2xl font-semibold text-black mb-6">
-                Your Purchased Notes
-              </h2>
+          /* PAGE WRAP */
+          .home-wrap{position:relative;z-index:10;max-width:1000px;margin:0 auto;padding:2rem 1.75rem 3rem;}
 
-              <div className="grid md:grid-cols-3 gap-8">
+          /* PAGE HEADER */
+          .page-header{margin-bottom:1.75rem;}
+          .page-eyebrow{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(96,165,250,.75);font-weight:500;margin-bottom:.4rem;}
+          .page-title{font-size:clamp(22px,3.5vw,32px);font-weight:300;letter-spacing:-.6px;color:#e8eaf6;margin-bottom:.4rem;}
+          .page-title em{font-style:normal;background:linear-gradient(135deg,#93c5fd,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 
-                {purchasedNotesData.map((note) => (
+          /* SECTION LABEL */
+          .section-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(96,165,250,.75);font-weight:500;margin-bottom:.6rem;}
+          .section-h2{font-size:16px;font-weight:500;color:#e8eaf6;margin-bottom:1rem;letter-spacing:-.2px;}
 
-                  <div
-                    key={note.id}
-                    className="bg-gray-50 p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition flex flex-col justify-between"
-                  >
+          /* GLASS PANEL */
+          .g-panel{background:rgba(10,20,55,0.65);border:1px solid rgba(96,165,250,0.16);backdrop-filter:blur(22px);border-radius:16px;padding:1.5rem;transition:border-color .22s,box-shadow .22s;}
+          .g-panel:hover{border-color:rgba(96,165,250,0.32);box-shadow:0 4px 36px rgba(96,165,250,0.08);}
 
-                    <div>
+          /* FILTER GRID */
+          .filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+          @media(min-width:600px){.filter-grid{grid-template-columns:repeat(3,1fr);}}
+          @media(min-width:900px){.filter-grid{grid-template-columns:repeat(6,1fr);}}
 
-                      <h3 className="text-xl font-semibold text-black mb-2">
-                        {note.title}
-                      </h3>
+          /* SELECT WRAPPER */
+          .select-wrap{position:relative;width:100%;}
+          .select-arrow{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:rgba(96,165,250,0.4);pointer-events:none;transition:color .18s,transform .22s;}
+          .select-wrap:hover .select-arrow{color:rgba(96,165,250,0.9);}
+          .select-wrap:focus-within .select-arrow{color:#60a5fa;transform:translateY(-50%) rotate(180deg);}
 
-                      <div className="text-sm text-gray-600 mb-3 space-y-1">
-                        <p><span className="font-medium">University:</span> {note.university}</p>
-                        <p><span className="font-medium">Degree:</span> {note.degree} | {note.stream}</p>
-                        <p><span className="font-medium">Year:</span> {note.year} | Semester {note.semester}</p>
-                        <p><span className="font-medium">Subject:</span> {note.subject}</p>
-                      </div>
+          /* FILTER SELECT */
+          .filter-select{width:100%;background:rgba(10,20,55,0.55);border:1px solid rgba(96,165,250,0.16);border-radius:10px;padding:9px 28px 9px 12px;font-size:12px;color:rgba(180,195,230,0.45);font-family:inherit;outline:none;cursor:pointer;appearance:none;backdrop-filter:blur(14px);transition:border-color .18s,background .18s,box-shadow .18s,color .18s;}
+          .filter-select.has-value{color:#e8eaf6;}
+          .filter-select:hover{border-color:rgba(96,165,250,0.42);background:rgba(16,30,78,0.72);box-shadow:0 0 14px rgba(96,165,250,0.08);}
+          .filter-select:focus{border-color:rgba(96,165,250,0.62);background:rgba(16,32,82,0.82);box-shadow:0 0 0 3px rgba(96,165,250,0.1),0 0 20px rgba(96,165,250,0.09);color:#e8eaf6;}
+          .filter-select option{background:#08142a;color:#e8eaf6;}
+          .filter-select option:first-child{color:rgba(180,195,230,0.45);}
 
-                      <p className="text-gray-700 text-sm leading-relaxed mb-4 line-clamp-4">
-                        {note.description}
-                      </p>
+          /* APPLY BUTTON */
+          .apply-btn{margin-top:1rem;padding:9px 22px;background:rgba(96,165,250,0.18);border:1px solid rgba(96,165,250,0.4);color:#60a5fa;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s;}
+          .apply-btn:hover{background:rgba(96,165,250,0.3);box-shadow:0 0 18px rgba(96,165,250,0.18);}
 
-                    </div>
+          /* NOTES GRID */
+          .notes-grid{display:grid;grid-template-columns:1fr;gap:12px;}
+          @media(min-width:540px){.notes-grid{grid-template-columns:1fr 1fr;}}
+          @media(min-width:900px){.notes-grid{grid-template-columns:repeat(3,1fr);}}
 
-                    <div className="mt-4 flex justify-end">
+          /* NOTE CARD */
+          .note-card{background:rgba(10,20,55,0.6);border:1px solid rgba(96,165,250,0.14);backdrop-filter:blur(14px);border-radius:14px;padding:1.25rem;display:flex;flex-direction:column;justify-content:space-between;cursor:default;}
+          .note-card.purchased{border-color:rgba(52,211,153,0.25);background:rgba(10,35,25,0.55);}
 
-                      <a
-                        href={note.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 transition"
+          .note-title{font-size:14px;font-weight:500;color:#e8eaf6;margin-bottom:.5rem;line-height:1.4;}
+          .note-desc{font-size:12px;color:rgba(200,210,240,0.6);line-height:1.6;margin-bottom:.85rem;}
+          .note-meta{display:flex;flex-direction:column;gap:3px;margin-bottom:.85rem;}
+          .note-meta-row{font-size:11px;color:rgba(180,195,230,0.45);}
+          .note-meta-row span{color:rgba(200,210,240,0.65);font-weight:500;}
+
+          /* BADGES */
+          .badge-free{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 9px;border-radius:18px;font-weight:500;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.3);color:#34d399;margin-bottom:.6rem;}
+          .badge-paid{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 9px;border-radius:18px;font-weight:500;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.3);color:#a78bfa;margin-bottom:.6rem;}
+          .badge-owned{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 9px;border-radius:18px;font-weight:500;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.3);color:#34d399;margin-bottom:.6rem;}
+
+          /* ACTION BUTTONS */
+          .btn-view{padding:8px 18px;background:rgba(96,165,250,0.16);border:1px solid rgba(96,165,250,0.35);color:#60a5fa;border-radius:18px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-block;transition:all .18s;}
+          .btn-view:hover{background:rgba(96,165,250,0.28);box-shadow:0 0 14px rgba(96,165,250,0.18);}
+          .btn-buy{padding:8px 18px;background:rgba(167,139,250,0.16);border:1px solid rgba(167,139,250,0.35);color:#a78bfa;border-radius:18px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .18s;}
+          .btn-buy:hover{background:rgba(167,139,250,0.28);box-shadow:0 0 14px rgba(167,139,250,0.18);}
+
+          /* EMPTY / LOADING */
+          .state-box{background:rgba(10,20,55,0.6);border:1px solid rgba(96,165,250,0.14);backdrop-filter:blur(14px);border-radius:14px;padding:2.5rem;text-align:center;}
+          .state-emoji{font-size:32px;margin-bottom:.75rem;}
+          .state-title{font-size:15px;font-weight:500;color:#e8eaf6;margin-bottom:.4rem;}
+          .state-sub{font-size:12px;color:rgba(200,210,240,0.6);line-height:1.6;}
+
+          /* DIVIDER */
+          .g-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(96,165,250,0.15) 30%,rgba(96,165,250,0.15) 70%,transparent);margin:2rem 0;}
+
+        `}</style>
+
+        <div className="home-scene">
+          <div className="ceiling-light" />
+
+          {/* ── PAGE CONTENT ── */}
+          <div className="home-wrap">
+
+            {/* PAGE HEADER — fade up on mount */}
+            <motion.div
+              className="page-header"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="page-eyebrow">Study material</div>
+              <h1 className="page-title">Browse <em>Notes</em></h1>
+            </motion.div>
+
+            {/* ── PURCHASED NOTES ── */}
+            <AnimatePresence>
+              {purchasedNotesData.length > 0 && (
+                <motion.div
+                  key="purchased-section"
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                  style={{ marginBottom: "1.75rem" }}
+                >
+                  <div className="section-label">Your collection</div>
+                  <div className="section-h2">Purchased Notes</div>
+                  <div className="notes-grid">
+                    {purchasedNotesData.map((note, i) => (
+                      <motion.div
+                        key={note.id}
+                        custom={i}
+                        variants={cardVariants}
+                        initial="hidden"
+                        animate="visible"
+                        whileHover={{
+                          y: -5,
+                          borderColor: "rgba(52,211,153,0.45)",
+                          boxShadow: "0 10px 32px rgba(52,211,153,0.10)",
+                          transition: { duration: 0.2 },
+                        }}
+                        className="note-card purchased"
                       >
-                        View PDF
-                      </a>
-
-                    </div>
-
+                        <div>
+                          <div className="badge-owned">✓ Owned</div>
+                          <div className="note-title">{note.title}</div>
+                          <div className="note-desc">{note.description}</div>
+                          <div className="note-meta">
+                            <div className="note-meta-row"><span>University:</span> {note.university}</div>
+                            <div className="note-meta-row"><span>Degree:</span> {note.degree} · {note.stream}</div>
+                            <div className="note-meta-row"><span>Year:</span> {note.year} · <span>Semester:</span> {note.semester}</div>
+                            <div className="note-meta-row"><span>Subject:</span> {note.subject}</div>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                          <motion.a
+                            href={note.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-view"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.96 }}
+                          >
+                            View PDF ↗
+                          </motion.a>
+                        </div>
+                      </motion.div>
+                    ))}
                   </div>
+                  <div className="g-divider" />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-                ))}
-
+            {/* ── FILTER SECTION ── */}
+            <motion.div
+              className="g-panel"
+              style={{ marginBottom: "1.75rem" }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+            >
+              <div className="section-label" style={{ marginBottom: ".65rem" }}>Filter notes</div>
+              <div className="filter-grid">
+                <Select value={university} onChange={setUniversity} options={["MAKAUT"]} placeholder="University" />
+                <Select value={degree} onChange={setDegree} options={["B.Tech"]} placeholder="Degree" />
+                <Select value={stream} onChange={setStream} options={["CSE"]} placeholder="Stream" />
+                <Select value={year} onChange={setYear} options={["1", "2", "3", "4"]} placeholder="Year" />
+                <Select value={semester} onChange={setSemester} options={["1", "2", "3", "4", "5", "6", "7", "8"]} placeholder="Semester" />
+                <Select value={subject} onChange={setSubject} options={["MATHEMATICS-IA","PHYSICS-I","BASIC ELECTRICAL ENGINEERING","CHEMISTRY-I",
+                        "MATHEMATICS-IIA","PROGRAMMING FOR PROBLEM SOLVING","ENGLISH",
+                        "ANALOG & DIGITAL ELECTRONICS","DATA STRUCTURES & ALGORITHMS","COMPUTER ORGANISATION",
+                        "MATHEMATICS-IIIA","ECONOMICS FOR ENGINEERS","DISCRETE MATHEMATICS",
+                        "COMPUTER ARCHITECTURE","FORMAL LANGUAGE & AUTOMATA THEORY",
+                        "DESIGN & ANALYSIS OF ALGORITHMS","BIOLOGY","ENVIRONMENTAL SCIENCES",
+                        "SOFTWARE ENGINEERING","COMPILER DESIGN","OPERATING SYSTEMS",
+                        "OBJECT ORIENTED PROGRAMMING","INTRODUCTION TO INDUSTRIAL MANAGEMENT",
+                        "ARTIFICIAL INTELLIGENCE","CONSTITUTION OF INDIA","DATABASE MANAGEMENT SYSTEMS",
+                        "COMPUTER NETWORKS","DISTRIBUTED SYSTEMS","IMAGE PROCESSING","PATTERN RECOGNITION",
+                        "NUMERICAL METHODS","RESEARCH METHODOLOGY","DATA WAREHOUSING & DATA MINING",
+                        "HUMAN RESOURCE DEVELOPMENT & ORGANIZATIONAL BEHAVIOR","MACHINE LEARNING",
+                        "SOFT COMPUTING","ADHOC-SENSOR NETWORK","OPERATION RESEARCH",
+                        "MULTIMEDIA TECHNOLOGY","PROJECT MANAGEMENT & ENTREPENEURSHIP",
+                        "CRYPTOGRAPHY & NETWORK SECURITY","INTERNET OF THINGS","BIG DATA ANALYSIS",
+                        "MOBILE COMPUTING","E-COMMERCE & ERP",]} placeholder="Subject" />
               </div>
-
-            </div>
-          )}
-
-          {/* FILTER SECTION */}
-
-          <div className="bg-gray-100 p-8 rounded-2xl shadow-sm border border-gray-200 mb-10">
-
-            <h2 className="text-lg font-semibold text-black border-b pb-2 mb-6">
-              Filter Notes
-            </h2>
-
-            <div className="grid md:grid-cols-3 gap-4">
-              <Select value={university} onChange={setUniversity} options={["MAKAUT"]} placeholder="Select University" />
-              <Select value={degree} onChange={setDegree} options={["B.Tech"]} placeholder="Select Degree" />
-              <Select value={stream} onChange={setStream} options={["CSE"]} placeholder="Select Stream" />
-              <Select value={year} onChange={setYear} options={["1","2","3","4"]} placeholder="Select Year" />
-              <Select value={semester} onChange={setSemester} options={["1","2","3","4","5","6","7","8"]} placeholder="Select Semester" />
-              <Select value={subject} onChange={setSubject} options={["MATHEMATICS-IA","PHYSICS-I","DATA STRUCTURES & ALGORITHMS","DATABASE MANAGEMENT SYSTEMS","OPERATING SYSTEMS","COMPUTER NETWORKS","MACHINE LEARNING"]} placeholder="Select Subject" />
-            </div>
-
-            <div className="mt-6">
-              <button
+              <motion.button
                 onClick={handleApplyFilters}
-                className="bg-black text-white px-6 py-2.5 rounded-xl hover:opacity-90 transition"
+                className="apply-btn"
+                whileHover={{ scale: 1.04, boxShadow: "0 0 20px rgba(96,165,250,0.22)" }}
+                whileTap={{ scale: 0.96 }}
               >
-                Apply Filters
-              </button>
-            </div>
+                Apply Filters →
+              </motion.button>
+            </motion.div>
+
+            {/* ── NOTES ── */}
+            <AnimatePresence mode="wait">
+              {loading ? (
+                <motion.div
+                  key="loading"
+                  className="state-box"
+                  variants={stateBoxVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                >
+                  <motion.div
+                    className="state-emoji"
+                    animate={{ rotate: [0, 10, -10, 0] }}
+                    transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
+                  >
+                    ⏳
+                  </motion.div>
+                  <div className="state-title">Loading notes...</div>
+                  <div className="state-sub">Fetching the latest study material for you.</div>
+                </motion.div>
+              ) : notes.length === 0 ? (
+                <motion.div
+                  key="empty"
+                  className="state-box"
+                  variants={stateBoxVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                >
+                  <div className="state-emoji">📭</div>
+                  <div className="state-title">No Notes Found</div>
+                  <div className="state-sub">Try adjusting your filters or browse another subject.</div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="notes-list"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <div className="section-label">All notes</div>
+                  <div className="notes-grid">
+                    {notes.map((note, i) => {
+                      const purchased = purchasedNotes.includes(note.id);
+                      return (
+                        <motion.div
+                          key={note.id}
+                          custom={i}
+                          variants={cardVariants}
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
+                          whileHover={{
+                            y: -5,
+                            borderColor: purchased
+                              ? "rgba(52,211,153,0.42)"
+                              : "rgba(96,165,250,0.35)",
+                            boxShadow: purchased
+                              ? "0 10px 30px rgba(52,211,153,0.09)"
+                              : "0 10px 30px rgba(96,165,250,0.10)",
+                            transition: { duration: 0.2 },
+                          }}
+                          className={`note-card${purchased ? " purchased" : ""}`}
+                        >
+                          <div>
+                            {note.price === 0
+                              ? <div className="badge-free">● Free</div>
+                              : purchased
+                                ? <div className="badge-owned">✓ Owned</div>
+                                : <div className="badge-paid">🔒 ₹{note.price}</div>
+                            }
+                            <div className="note-title">{note.title}</div>
+                            <div className="note-desc">{note.description}</div>
+                            <div className="note-meta">
+                              <div className="note-meta-row"><span>Subject:</span> {note.subject}</div>
+                              <div className="note-meta-row"><span>University:</span> {note.university}</div>
+                              <div className="note-meta-row"><span>Degree:</span> {note.degree} · {note.stream}</div>
+                              <div className="note-meta-row"><span>Year:</span> {note.year} · <span>Semester:</span> {note.semester}</div>
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                            {note.price === 0 || purchased ? (
+                              <motion.a
+                                href={note.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-view"
+                                whileHover={{ scale: 1.06 }}
+                                whileTap={{ scale: 0.94 }}
+                              >
+                                View PDF ↗
+                              </motion.a>
+                            ) : (
+                              <motion.button
+                                onClick={() => buyNote(note.id)}
+                                className="btn-buy"
+                                whileHover={{ scale: 1.06 }}
+                                whileTap={{ scale: 0.94 }}
+                              >
+                                Buy ₹{note.price}
+                              </motion.button>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
           </div>
 
-          {/* NORMAL NOTES */}
-
-          {loading ? (
-            <div className="text-black">Loading notes...</div>
-          ) : notes.length === 0 ? (
-            <div className="bg-gray-100 p-8 rounded-2xl shadow-sm border border-gray-200 text-black">
-              <h3 className="text-lg font-semibold mb-2">No Notes Found</h3>
-              <p className="text-gray-600 text-sm">
-                Try adjusting filters or browse another subject.
-              </p>
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-3 gap-8">
-
-              {notes.map((note) => {
-
-                const purchased = purchasedNotes.includes(note.id);
-
-                return (
-                  <div
-                    key={note.id}
-                    className="bg-gray-50 p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition flex flex-col justify-between"
-                  >
-
-                    <div>
-
-                      <h3 className="text-xl font-semibold text-black mb-2">
-                        {note.title}
-                      </h3>
-                      <p className="text-gray-700 text-sm leading-relaxed mb-4 line-clamp-4">
-                        {note.description}
-                      </p>
-                      <div className="text-sm text-gray-600 mb-3 space-y-1">
-                        <p><span className="font-medium">Subject:</span> {note.subject}</p>
-                        <p><span className="font-medium">University:</span> {note.university}</p>
-                        <p><span className="font-medium">Degree:</span> {note.degree} | {note.stream}</p>
-                        <p><span className="font-medium">Year:</span> {note.year} | Semester {note.semester}</p>
-                      </div>
-
-                    </div>
-
-                    <div className="mt-4 flex justify-end">
-
-                      {note.price === 0 || purchased ? (
-                        <a
-                          href={note.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 transition"
-                        >
-                          View PDF
-                        </a>
-                      ) : (
-                        <button
-                          onClick={() => buyNote(note.id)}
-                          className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 transition"
-                        >
-                          Buy ₹{note.price}
-                        </button>
-                      )}
-
-                    </div>
-
-                  </div>
-                );
-
-              })}
-
-            </div>
-          )}
-
         </div>
-      </div>
+      </>
     </AuthGuard>
-  );
-}
-
-function Select({
-  value,
-  onChange,
-  options,
-  placeholder,
-}: {
-  value: string;
-  onChange: (val: string) => void;
-  options: string[];
-  placeholder: string;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full border border-gray-300 text-black rounded-lg p-2 bg-white focus:outline-none focus:ring-2 focus:ring-black"
-    >
-      <option value="">{placeholder}</option>
-      {options.map((option) => (
-        <option key={option} value={option}>
-          {option}
-        </option>
-      ))}
-    </select>
   );
 }

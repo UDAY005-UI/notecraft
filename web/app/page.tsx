@@ -8,20 +8,13 @@ import { useEffect, useRef } from "react";
 const SHELF_NOTES = [
   { id: "1", shortTitle: "Complete DSA",          title: "Data Structures & Algorithms",                       subject: "DSA",   university: "MAKAUT", semester: 3, premium: false,             width: 25,  height: 148, color: "linear-gradient(180deg,#0d1f4a,#091535)" },
   { id: "2", shortTitle: "Mathematics-III",       title: "Engineering Mathematics III",                        subject: "Maths", university: "MAKAUT", semester: 3, premium: false,             width: 20,  height: 132, color: "linear-gradient(180deg,#0a1a3e,#071228)" },
-  { id: "4", shortTitle: "Complete ADE",          title: "Analog & Digital Electronics",                       subject: "ADE",   university: "MAKAUT", semester: 3, premium: true,  price: 59,  width: 22,  height: 138, color: "linear-gradient(180deg,#0b1d44,#07132e)" },
-  { id: "3", shortTitle: "Automata Theory",       title: "Formal Language & Automata Theory",                  subject: "FLAT",  university: "MAKAUT", semester: 4, premium: true,  price: 39,  width: 29,  height: 160, color: "linear-gradient(180deg,#0c2248,#071830)" },
+  { id: "4", shortTitle: "Complete ADE",          title: "Analog & Digital Electronics",                       subject: "ADE",   university: "MAKAUT", semester: 3, premium: false,              width: 22,  height: 138, color: "linear-gradient(180deg,#0b1d44,#07132e)" },
+  { id: "3", shortTitle: "Automata Theory",       title: "Formal Language & Automata Theory",                  subject: "FLAT",  university: "MAKAUT", semester: 4, premium: false,              width: 29,  height: 160, color: "linear-gradient(180deg,#0c2248,#071830)" },
   { id: "5", shortTitle: "Complete SE",           title: "Software Engineering",                               subject: "SE",    university: "MAKAUT", semester: 5, premium: false,             width: 122, height: 190, color: "linear-gradient(155deg,#0f2d5e,#071d42)", featured: true },
-  { id: "6", shortTitle: "OOPs Concepts",         title: "Object Oriented Programming",                        subject: "OOP",   university: "MAKAUT", semester: 5, premium: true,  price: 49,  width: 23,  height: 145, color: "linear-gradient(180deg,#10204a,#0b1835)" },
+  { id: "6", shortTitle: "OOPs Concepts",         title: "Object Oriented Programming",                        subject: "OOP",   university: "MAKAUT", semester: 5, premium: false,              width: 23,  height: 145, color: "linear-gradient(180deg,#10204a,#0b1835)" },
   { id: "7", shortTitle: "Complete DBMS",         title: "Database Management System",                         subject: "DBMS",  university: "MAKAUT", semester: 6, premium: false,             width: 27,  height: 158, color: "linear-gradient(180deg,#0e2246,#091832)" },
   { id: "8", shortTitle: "IOT Concepts",          title: "Internet of things",                                 subject: "IOT",   university: "MAKAUT", semester: 8, premium: false,             width: 21,  height: 136, color: "linear-gradient(180deg,#0d1e42,#08152e)" },
   { id: "9", shortTitle: "Data Analytics",        title: "Big Data Analytics",                                 subject: "BDA",   university: "MAKAUT", semester: 8, premium: false,             width: 24,  height: 150, color: "linear-gradient(180deg,#0c1e48,#071530)" },
-];
-
-const STATS = [
-  { num: "248",  label: "Notes" },
-  { num: "6",    label: "Universities" },
-  { num: "12k+", label: "Downloads" },
-  { num: "2.4k", label: "Students" },
 ];
 
 const SUBJECTS = [
@@ -242,10 +235,10 @@ export default function Home() {
               fontSize:"clamp(26px,5vw,46px)", fontWeight:300, lineHeight:1.15,
               letterSpacing:"-0.7px", marginBottom:16, color:"#e8eaf6",
             }}>
-              Structured Engineering Notes<br />
+              A smarter study platform<br />
               for{" "}
               <span style={{ background:"linear-gradient(135deg,#93c5fd,#60a5fa)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", fontWeight:600 }}>
-                MAKAUT Students.
+                Engineering students.
               </span>
             </h1>
 
@@ -323,16 +316,6 @@ export default function Home() {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* legend */}
-          <div style={{ display:"flex", justifyContent:"center", gap:18, padding:"12px 0 8px" }}>
-            {[{ label:"Free note", color:"#34d399", shadow:"rgba(52,211,153,0.7)" }, { label:"Premium note", color:"#a78bfa", shadow:"rgba(167,139,250,0.7)" }].map(({ label, color, shadow }) => (
-              <div key={label} style={{ display:"flex", alignItems:"center", gap:5, fontSize:10, color:"rgba(200,210,240,0.6)" }}>
-                <div style={{ width:7, height:7, borderRadius:"50%", background:color, boxShadow:`0 0 5px ${shadow}` }} />
-                {label}
-              </div>
-            ))}
           </div>
 
           {/* ════════════════════════════════

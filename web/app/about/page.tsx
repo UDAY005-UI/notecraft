@@ -56,36 +56,22 @@ const scaleUp = {
 };
 
 /* ─── ROADMAP DATA ─── */
-const roadmap = [
-  {
-    phase: "Now",
-    color: "#22c55e",
-    title: "MAKAUT Engineering",
-    desc: "Semester-wise notes for all years of MAKAUT B.Tech — curated, structured, and always accessible.",
-    status: "live",
-  },
-  {
-    phase: "Next",
-    color: "#60a5fa",
-    title: "Student Uploads",
-    desc: "Let students contribute their own notes and resources — building a collaborative knowledge base for everyone.",
-    status: "building",
-  },
-  {
-    phase: "Soon",
-    color: "#a78bfa",
-    title: "More Universities",
-    desc: "Expanding to other West Bengal universities and eventually all major Indian engineering colleges.",
-    status: "planned",
-  },
-  {
-    phase: "Vision",
-    color: "#f59e0b",
-    title: "Beyond Engineering",
-    desc: "Opening up to other degrees — Science, Commerce, Management — so every student has a reliable study companion.",
-    status: "vision",
-  },
-];
+const roadmapItems = [
+  { label: "MAKAUT notes — live",         status: "live" },
+  { label: "Filter by semester & subject", status: "live" },
+  { label: "Other university notes",        status: "soon" },
+  { label: "Student contribution system",  status: "soon" },
+  { label: "Assignment generator",         status: "planned" },
+  { label: "Presentation builder",         status: "planned" },
+] as const;
+
+type RoadmapStatus = "live" | "soon" | "planned";
+
+const statusConfig: Record<RoadmapStatus, { dot: string; label: string; pillBg: string; pillColor: string; pillBorder: string }> = {
+  live:    { dot: "#22c55e", label: "Live",        pillBg: "rgba(34,197,94,0.12)",  pillColor: "#4ade80", pillBorder: "rgba(34,197,94,0.3)" },
+  soon:    { dot: "#f59e0b", label: "Coming soon", pillBg: "rgba(245,158,11,0.12)", pillColor: "#fcd34d", pillBorder: "rgba(245,158,11,0.3)" },
+  planned: { dot: "rgba(200,210,240,0.25)", label: "Planned", pillBg: "transparent", pillColor: "rgba(200,210,240,0.4)", pillBorder: "transparent" },
+};
 
 /* ─── MAIN COMPONENT ─── */
 export default function AboutPage() {
@@ -105,10 +91,6 @@ export default function AboutPage() {
           0%,100% { opacity: var(--lo, .06); }
           50%      { opacity: var(--hi, .28); }
         }
-        @keyframes lineGrow {
-          from { transform: scaleX(0); }
-          to   { transform: scaleX(1); }
-        }
         @keyframes floatUp {
           0%,100% { transform: translateY(0); }
           50%      { transform: translateY(-6px); }
@@ -122,7 +104,6 @@ export default function AboutPage() {
           background: #070c1b !important;
         }
 
-        /* ── WRAPPER ── */
         .ab2-wrap {
           position: relative;
           overflow: hidden;
@@ -135,7 +116,6 @@ export default function AboutPage() {
           padding-bottom: 6rem;
         }
 
-        /* ── DECORATIVE TOP BEAM ── */
         .ab2-beam {
           position: absolute;
           top: 0; left: 15%; right: 15%;
@@ -147,7 +127,6 @@ export default function AboutPage() {
           z-index: 0;
         }
 
-        /* ── CONTENT ── */
         .ab2-content {
           position: relative;
           z-index: 1;
@@ -156,7 +135,6 @@ export default function AboutPage() {
           padding: 0 1.75rem;
         }
 
-        /* ── HERO ── */
         .ab2-hero {
           padding: 5rem 0 4rem;
           text-align: center;
@@ -203,7 +181,6 @@ export default function AboutPage() {
           margin: 0 auto 2rem;
         }
 
-        /* ── DIVIDER ── */
         .ab2-divider {
           display: flex;
           align-items: center;
@@ -223,7 +200,6 @@ export default function AboutPage() {
           background: rgba(147,197,253,0.4);
         }
 
-        /* ── SECTION LABEL ── */
         .ab2-section-label {
           font-size: 10px;
           font-weight: 600;
@@ -244,7 +220,6 @@ export default function AboutPage() {
           max-width: 120px;
         }
 
-        /* ── ORIGIN STORY ── */
         .ab2-story {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -254,6 +229,7 @@ export default function AboutPage() {
 
         @media (max-width: 600px) {
           .ab2-story { grid-template-columns: 1fr; }
+          .ab2-roadmap-grid { grid-template-columns: 1fr !important; }
         }
 
         .ab2-story-text {
@@ -268,7 +244,6 @@ export default function AboutPage() {
           font-weight: 500;
         }
 
-        /* ── PULLQUOTE ── */
         .ab2-quote {
           border-left: 2px solid rgba(96,165,250,0.5);
           padding: 1rem 1.5rem;
@@ -295,131 +270,31 @@ export default function AboutPage() {
           font-style: normal;
         }
 
-        /* ── FREE / PREMIUM ── */
-        .ab2-plans {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1rem;
-          margin-top: 1.5rem;
+        .ab2-roadmap-title {
+          font-size: clamp(22px, 3.5vw, 32px);
+          font-weight: 500;
+          color: #dde6f8;
+          margin-bottom: 1.5rem;
+          letter-spacing: -0.3px;
         }
 
-        @media (max-width: 500px) {
-          .ab2-plans { grid-template-columns: 1fr; }
-        }
-
-        .ab2-plan {
-          padding: 1.5rem;
-          border-radius: 14px;
-          border: 1px solid rgba(255,255,255,0.08);
-          background: rgba(255,255,255,0.03);
-          transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .ab2-plan:hover {
-          border-color: rgba(255,255,255,0.14);
-        }
-
-        .ab2-plan.premium {
-          border-color: rgba(96,165,250,0.25);
-          background: rgba(96,165,250,0.06);
-          animation: glow 4s ease-in-out infinite;
-        }
-
-        .ab2-plan-badge {
-          display: inline-block;
-          font-size: 9px;
-          font-weight: 700;
-          letter-spacing: 1.2px;
-          text-transform: uppercase;
-          padding: 3px 9px;
-          border-radius: 20px;
-          margin-bottom: 0.75rem;
-        }
-
-        .ab2-plan-badge.free    { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
-        .ab2-plan-badge.premium { background: rgba(96,165,250,0.18); color: #93c5fd; border: 1px solid rgba(96,165,250,0.3); }
-
-        .ab2-plan h4 { font-size: 17px; font-weight: 600; color: #dde6f8; margin-bottom: 0.5rem; }
-        .ab2-plan p  { font-size: 13px; font-weight: 300; color: rgba(180,195,235,0.6); line-height: 1.65; }
-
-        /* ── ROADMAP ── */
-        .ab2-roadmap {
-          margin-top: 1.75rem;
+        .ab2-road-row {
           display: flex;
-          flex-direction: column;
-          gap: 0;
-        }
-
-        .ab2-road-item {
-          display: flex;
-          gap: 1.25rem;
-          align-items: flex-start;
-          padding: 1.25rem 0;
-          border-bottom: 1px solid rgba(255,255,255,0.05);
-          transition: background 0.2s;
-        }
-
-        .ab2-road-item:last-child { border-bottom: none; }
-
-        .ab2-road-left {
-          flex-shrink: 0;
-          display: flex;
-          flex-direction: column;
           align-items: center;
-          gap: 4px;
-          padding-top: 3px;
-        }
-
-        .ab2-road-dot {
-          width: 10px; height: 10px;
-          border-radius: 50%;
-          border: 1.5px solid;
-          flex-shrink: 0;
-        }
-
-        .ab2-road-track {
-          width: 1px; height: 100%;
-          min-height: 30px;
-          background: rgba(255,255,255,0.07);
-        }
-
-        .ab2-road-item:last-child .ab2-road-track { display: none; }
-
-        .ab2-road-phase {
-          font-size: 9px;
-          font-weight: 700;
-          letter-spacing: 1.5px;
-          text-transform: uppercase;
-          min-width: 40px;
-          padding-top: 2px;
-        }
-
-        .ab2-road-body h4 {
-          font-size: 15px;
-          font-weight: 600;
-          color: #cdd9f5;
-          margin-bottom: 0.3rem;
-        }
-
-        .ab2-road-body p {
-          font-size: 13px;
-          font-weight: 300;
-          color: rgba(180,195,235,0.55);
-          line-height: 1.65;
-        }
-
-        .ab2-road-pill {
-          margin-top: 0.4rem;
-          display: inline-block;
-          font-size: 9px;
-          font-weight: 700;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-          padding: 2px 8px;
+          justify-content: space-between;
+          padding: 14px 16px;
           border-radius: 10px;
+          border: 1px solid rgba(255,255,255,0.08);
+          background: rgba(255,255,255,0.02);
+          gap: 10px;
+          transition: border-color 0.2s, background 0.2s;
         }
 
-        /* ── FOUNDER ── */
+        .ab2-road-row:hover {
+          border-color: rgba(255,255,255,0.14);
+          background: rgba(255,255,255,0.04);
+        }
+
         .ab2-founder {
           display: flex;
           gap: 1.25rem;
@@ -468,7 +343,6 @@ export default function AboutPage() {
           line-height: 1.7;
         }
 
-        /* ── CTA ── */
         .ab2-cta-section {
           text-align: center;
           padding: 4rem 0 1rem;
@@ -593,81 +467,47 @@ export default function AboutPage() {
             <div className="ab2-divider-line" />
           </div>
 
-          {/* ── FREE & PREMIUM ── */}
-          <motion.div variants={fadeUp} custom={0} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-            <div className="ab2-section-label">Access model</div>
-          </motion.div>
-
-          <motion.div className="ab2-plans" variants={fadeUp} custom={0.1} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-            <div className="ab2-plan">
-              <span className="ab2-plan-badge free">Free</span>
-              <h4>Always free, always open</h4>
-              <p>
-                Core notes for every semester are completely free — no sign-up walls,
-                no paywalls on the essentials. Every student deserves access to the basics.
-              </p>
-            </div>
-            <div className="ab2-plan premium">
-              <span className="ab2-plan-badge premium">Premium</span>
-              <h4>Go deeper with Premium</h4>
-              <p>
-                Unlock curated premium notes — more detailed, more exam-focused,
-                and carefully put together for students who want that extra edge.
-              </p>
-            </div>
-          </motion.div>
-
-          {/* ── DIVIDER ── */}
-          <div className="ab2-divider">
-            <div className="ab2-divider-line" />
-            <div className="ab2-divider-dot" />
-            <div className="ab2-divider-line" />
-          </div>
-
-          {/* ── ROADMAP ── */}
+          {/* ── ROADMAP GRID ── */}
           <motion.div variants={fadeUp} custom={0} initial="hidden" whileInView="visible" viewport={{ once: true }}>
             <div className="ab2-section-label">Where we&apos;re headed</div>
+            <h2 className="ab2-roadmap-title">Our roadmap. 🗺️</h2>
           </motion.div>
 
-          <div className="ab2-roadmap">
-            {roadmap.map((item, i) => {
-              const pillStyles: Record<string, { bg: string; color: string; border: string }> = {
-                live:     { bg: "rgba(34,197,94,0.12)",  color: "#4ade80", border: "rgba(34,197,94,0.25)" },
-                building: { bg: "rgba(96,165,250,0.12)", color: "#93c5fd", border: "rgba(96,165,250,0.25)" },
-                planned:  { bg: "rgba(167,139,250,0.12)",color: "#c4b5fd", border: "rgba(167,139,250,0.25)" },
-                vision:   { bg: "rgba(245,158,11,0.12)", color: "#fcd34d", border: "rgba(245,158,11,0.25)" },
-              };
-              const pill = pillStyles[item.status];
+          <div
+            className="ab2-roadmap-grid"
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}
+          >
+            {roadmapItems.map((item, i) => {
+              const cfg = statusConfig[item.status];
               return (
                 <motion.div
-                  className="ab2-road-item"
-                  key={item.phase}
-                  variants={fadeLeft}
-                  custom={i * 0.08}
+                  key={i}
+                  className="ab2-road-row"
+                  variants={fadeUp}
+                  custom={i * 0.06}
                   initial="hidden"
                   whileInView="visible"
                   viewport={{ once: true }}
                 >
-                  <div className="ab2-road-left">
-                    <div
-                      className="ab2-road-dot"
-                      style={{ borderColor: item.color, background: `${item.color}22` }}
-                    />
-                    <div className="ab2-road-track" />
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{
+                      width: 8, height: 8, borderRadius: "50%",
+                      background: cfg.dot, flexShrink: 0,
+                      boxShadow: item.status !== "planned" ? `0 0 6px ${cfg.dot}` : "none",
+                    }} />
+                    <span style={{ fontSize: 13, color: "rgba(200,215,245,0.75)", fontWeight: 400 }}>
+                      {item.label}
+                    </span>
                   </div>
-                  <div style={{ flex: 1, paddingBottom: "0.5rem" }}>
-                    <div className="ab2-road-phase" style={{ color: item.color }}>{item.phase}</div>
-                    <div className="ab2-road-body">
-                      <h4>{item.title}</h4>
-                      <p>{item.desc}</p>
-                      <span
-                        className="ab2-road-pill"
-                        style={{ background: pill.bg, color: pill.color, border: `1px solid ${pill.border}` }}
-                      >
-                        {item.status === "live" ? "Live now" : item.status === "building" ? "In consideration" : item.status === "planned" ? "Planned" : "Long-term vision"}
-                      </span>
-                    </div>
-                  </div>
+                  <span style={{
+                    fontSize: 10, fontWeight: 600, letterSpacing: "0.4px",
+                    padding: "3px 10px", borderRadius: "20px",
+                    background: cfg.pillBg, color: cfg.pillColor,
+                    border: `1px solid ${cfg.pillBorder}`,
+                    whiteSpace: "nowrap", flexShrink: 0,
+                  }}>
+                    {cfg.label}
+                  </span>
                 </motion.div>
               );
             })}

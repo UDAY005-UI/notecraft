@@ -18,7 +18,11 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: "https://notecraft-two.vercel.app",
+    origin: [
+      "https://notecraft-two.vercel.app",
+      "http://notecrafts.in",
+      "http://localhost:3000"
+    ],
     credentials: true,
   })
 );

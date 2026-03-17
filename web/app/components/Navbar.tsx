@@ -12,10 +12,11 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const links = [
-    { name: "Home", path: "/view-notes" },
+    { name: "Home", path: "/home" },
     { name: "About us", path: "/about" },
     { name: "Contact us", path: "/contact" },
     { name: "Blog", path: "/blog" },
+    { name: "Admin-Panel", path: "/admin-panel" },
   ];
 
   return (

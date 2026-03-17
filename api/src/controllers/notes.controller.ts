@@ -168,3 +168,201 @@ export const getMyPurchases = async (req: Request, res: Response) => {
 
   }
 }
+
+interface UpdateNoteBody {
+  title?: string;
+  description?: string;
+  price?: string;
+  university?: string;
+  degree?: string;
+  stream?: string;
+  year?: string;
+  semester?: string;
+  subject?: string;
+}
+
+export async function updateNote(
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  req: Request<{ id: string }, {}, UpdateNoteBody>,
+  res: Response
+) {
+  try {
+    const { userId } = getAuth(req);
+    const noteId = req.params.id;
+
+    const files = req.files as {
+      [fieldname: string]: Express.Multer.File[];
+    };
+    const newPdfFile = files?.file?.[0];
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const dbUser = await prisma.user.findUnique({
+      where: { clerkId: userId },
+    });
+
+    if (!dbUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const existingNote = await prisma.note.findUnique({
+      where: { id: noteId },
+    });
+
+    if (!existingNote) {
+      return res.status(404).json({ message: "Note not found" });
+    }
+
+    if (existingNote.uploadedById !== dbUser.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const {
+      title,
+      description,
+      price,
+      university,
+      degree,
+      stream,
+      year,
+      semester,
+      subject,
+    } = req.body;
+
+    const updateData: any = {};
+
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (price !== undefined) updateData.price = Number(price);
+    if (university !== undefined) updateData.university = university;
+    if (degree !== undefined) updateData.degree = degree;
+    if (stream !== undefined) updateData.stream = stream;
+    if (year !== undefined) updateData.year = Number(year);
+    if (semester !== undefined) updateData.semester = Number(semester);
+    if (subject !== undefined) updateData.subject = subject;
+
+    /* ---------------- FILE REPLACEMENT LOGIC ---------------- */
+
+    if (newPdfFile) {
+      try {
+        // 🔥 delete old file (if exists)
+        if (existingNote.fileUrl) {
+          const publicId = existingNote.fileUrl
+            .split("/")
+            .slice(-1)[0]
+            .split(".")[0];
+
+          await cloudinary.uploader.destroy(`notes/pdfs/${publicId}`, {
+            resource_type: "raw",
+          });
+        }
+
+        // ☁️ upload new file
+        const uploadRes = await cloudinary.uploader.upload(
+          newPdfFile.path,
+          {
+            folder: "notes/pdfs",
+            resource_type: "raw",
+            format: "pdf",
+          }
+        );
+
+        updateData.fileUrl = uploadRes.secure_url;
+
+        // 🧹 cleanup local file
+        fs.unlinkSync(newPdfFile.path);
+
+      } catch (err) {
+        console.error("File update failed:", err);
+        return res.status(500).json({
+          message: "File update failed",
+        });
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        message: "No fields provided for update",
+      });
+    }
+
+    const updatedNote = await prisma.note.update({
+      where: { id: noteId },
+      data: updateData,
+    });
+
+    return res.status(200).json({
+      success: true,
+      note: updatedNote,
+    });
+
+  } catch (error) {
+    console.error("Update error:", error);
+    return res.status(500).json({ message: "Update failed" });
+  }
+}
+
+export async function deleteNote(
+  req: Request<{ id: string }>,
+  res: Response
+) {
+  try {
+    const { userId } = getAuth(req);
+    const noteId = req.params.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const dbUser = await prisma.user.findUnique({
+      where: { clerkId: userId },
+    });
+
+    if (!dbUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const existingNote = await prisma.note.findUnique({
+      where: { id: noteId },
+    });
+
+    if (!existingNote) {
+      return res.status(404).json({ message: "Note not found" });
+    }
+
+    if (existingNote.uploadedById !== dbUser.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    // ✅ Delete file from Cloudinary (if exists)
+    if (existingNote.fileUrl) {
+      try {
+        const publicId = existingNote.fileUrl
+          .split("/")
+          .slice(-1)[0]
+          .split(".")[0];
+
+        await cloudinary.uploader.destroy(`notes/pdfs/${publicId}`, {
+          resource_type: "raw",
+        });
+      } catch (err) {
+        console.error("Cloudinary delete failed:", err);
+      }
+    }
+
+    await prisma.note.delete({
+      where: { id: noteId },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Note deleted successfully",
+    });
+
+  } catch (error) {
+    console.error("Delete error:", error);
+    return res.status(500).json({ message: "Delete failed" });
+  }
+}

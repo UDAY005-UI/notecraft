@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { AuthGuard } from "../components/AuthWrapper";
 import { useAuth, useUser } from "@clerk/nextjs";
@@ -28,24 +28,41 @@ interface Note {
   createdAt: string;
 }
 
+/* ─── SEMESTER → SUBJECTS MAP ─── */
+const SEMESTER_SUBJECTS: Record<string, string[]> = {
+  "1": ["MATHEMATICS-IA", "PHYSICS-I", "BASIC ELECTRICAL ENGINEERING"],
+  "2": ["CHEMISTRY-I", "MATHEMATICS-IIA", "PROGRAMMING FOR PROBLEM SOLVING", "ENGLISH"],
+  "3": ["ANALOG & DIGITAL ELECTRONICS", "DATA STRUCTURES & ALGORITHMS", "COMPUTER ORGANISATION", "MATHEMATICS-IIIA", "ECONOMICS FOR ENGINEERS"],
+  "4": ["DISCRETE MATHEMATICS", "COMPUTER ARCHITECTURE", "FORMAL LANGUAGE & AUTOMATA THEORY", "DESIGN & ANALYSIS OF ALGORITHMS", "BIOLOGY", "ENVIRONMENTAL SCIENCES"],
+  "5": ["SOFTWARE ENGINEERING", "COMPILER DESIGN", "OPERATING SYSTEMS", "OBJECT ORIENTED PROGRAMMING", "INTRODUCTION TO INDUSTRIAL MANAGEMENT", "ARTIFICIAL INTELLIGENCE", "CONSTITUTION OF INDIA"],
+  "6": ["DATABASE MANAGEMENT SYSTEMS", "COMPUTER NETWORKS", "DISTRIBUTED SYSTEMS", "IMAGE PROCESSING", "PATTERN RECOGNITION", "NUMERICAL METHODS", "RESEARCH METHODOLOGY", "DATA WAREHOUSING & DATA MINING", "HUMAN RESOURCE DEVELOPMENT & ORGANIZATIONAL BEHAVIOR"],
+  "7": ["MACHINE LEARNING", "SOFT COMPUTING", "ADHOC-SENSOR NETWORK", "OPERATION RESEARCH", "MULTIMEDIA TECHNOLOGY", "PROJECT MANAGEMENT & ENTREPENEURSHIP"],
+  "8": ["CRYPTOGRAPHY & NETWORK SECURITY", "INTERNET OF THINGS", "BIG DATA ANALYSIS", "MOBILE COMPUTING", "E-COMMERCE & ERP"],
+};
+
+const ALL_SUBJECTS = Object.values(SEMESTER_SUBJECTS).flat();
+
 /* ─── SELECT COMPONENT ─── */
 function Select({
   value,
   onChange,
   options,
   placeholder,
+  disabled,
 }: {
   value: string;
   onChange: (val: string) => void;
   options: string[];
   placeholder: string;
+  disabled?: boolean;
 }) {
   return (
     <div className="select-wrap">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`filter-select${value ? " has-value" : ""}`}
+        className={`filter-select${value ? " has-value" : ""}${disabled ? " disabled" : ""}`}
+        disabled={disabled}
       >
         <option value="">{placeholder}</option>
         {options.map((option) => (
@@ -299,6 +316,17 @@ export default function ViewNotes() {
   const [semester, setSemester] = useState("");
   const [subject, setSubject] = useState("");
 
+  /* ─── Derive subject list from selected semester ─── */
+  const availableSubjects = useMemo(() => {
+    if (!semester) return ALL_SUBJECTS;
+    return SEMESTER_SUBJECTS[semester] ?? [];
+  }, [semester]);
+
+  /* Reset subject whenever semester changes */
+  useEffect(() => {
+    setSubject("");
+  }, [semester]);
+
   const loadRazorpay = () => {
     return new Promise<boolean>((resolve) => {
       const script = document.createElement("script");
@@ -454,20 +482,22 @@ export default function ViewNotes() {
 
           .filter-select{width:100%;background:rgba(10,20,55,0.55);border:1px solid rgba(96,165,250,0.16);border-radius:10px;padding:9px 28px 9px 12px;font-size:12px;color:rgba(180,195,230,0.45);font-family:inherit;outline:none;cursor:pointer;appearance:none;backdrop-filter:blur(14px);transition:border-color .18s,background .18s,box-shadow .18s,color .18s;}
           .filter-select.has-value{color:#e8eaf6;}
-          .filter-select:hover{border-color:rgba(96,165,250,0.42);background:rgba(16,30,78,0.72);box-shadow:0 0 14px rgba(96,165,250,0.08);}
-          .filter-select:focus{border-color:rgba(96,165,250,0.62);background:rgba(16,32,82,0.82);box-shadow:0 0 0 3px rgba(96,165,250,0.1),0 0 20px rgba(96,165,250,0.09);color:#e8eaf6;}
+          .filter-select.disabled{opacity:0.45;cursor:not-allowed;}
+          .filter-select:not(.disabled):hover{border-color:rgba(96,165,250,0.42);background:rgba(16,30,78,0.72);box-shadow:0 0 14px rgba(96,165,250,0.08);}
+          .filter-select:not(.disabled):focus{border-color:rgba(96,165,250,0.62);background:rgba(16,32,82,0.82);box-shadow:0 0 0 3px rgba(96,165,250,0.1),0 0 20px rgba(96,165,250,0.09);color:#e8eaf6;}
           .filter-select option{background:#08142a;color:#e8eaf6;}
           .filter-select option:first-child{color:rgba(180,195,230,0.45);}
 
           .apply-btn{margin-top:1rem;padding:9px 22px;background:rgba(96,165,250,0.18);border:1px solid rgba(96,165,250,0.4);color:#60a5fa;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s;}
           .apply-btn:hover{background:rgba(96,165,250,0.3);box-shadow:0 0 18px rgba(96,165,250,0.18);}
 
+          .sem-hint{font-size:10px;color:rgba(96,165,250,0.45);margin-top:6px;letter-spacing:0.2px;}
+
           .notes-grid{column-count:1;column-gap:10px;}
           @media(min-width:540px){.notes-grid{column-count:2;}}
           @media(min-width:900px){.notes-grid{column-count:3;}}
           .notes-grid > *{display:inline-block;width:100%;margin-bottom:10px;break-inside:avoid;vertical-align:top;}
 
-          /* CARD — compact by default */
           .note-card{
             background:rgba(10,20,55,0.6);
             border:1px solid rgba(96,165,250,0.14);
@@ -516,7 +546,6 @@ export default function ViewNotes() {
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             >
               <div className="page-eyebrow">Study material</div>
-              {/* ── "Notes" is now bold ── */}
               <h1 className="page-title"><strong style={{background:"none",WebkitTextFillColor:"#ffffff",color:"#ffffff"}}>Browse</strong> <strong>Notes</strong></h1>
             </motion.div>
 
@@ -557,26 +586,36 @@ export default function ViewNotes() {
                 <Select value={degree} onChange={setDegree} options={["B.Tech"]} placeholder="Degree" />
                 <Select value={stream} onChange={setStream} options={["CSE"]} placeholder="Stream" />
                 <Select value={year} onChange={setYear} options={["1", "2", "3", "4"]} placeholder="Year" />
-                <Select value={semester} onChange={setSemester} options={["1", "2", "3", "4", "5", "6", "7", "8"]} placeholder="Semester" />
-                <Select value={subject} onChange={setSubject} options={[
-                  "MATHEMATICS-IA","PHYSICS-I","BASIC ELECTRICAL ENGINEERING","CHEMISTRY-I",
-                  "MATHEMATICS-IIA","PROGRAMMING FOR PROBLEM SOLVING","ENGLISH",
-                  "ANALOG & DIGITAL ELECTRONICS","DATA STRUCTURES & ALGORITHMS","COMPUTER ORGANISATION",
-                  "MATHEMATICS-IIIA","ECONOMICS FOR ENGINEERS","DISCRETE MATHEMATICS",
-                  "COMPUTER ARCHITECTURE","FORMAL LANGUAGE & AUTOMATA THEORY",
-                  "DESIGN & ANALYSIS OF ALGORITHMS","BIOLOGY","ENVIRONMENTAL SCIENCES",
-                  "SOFTWARE ENGINEERING","COMPILER DESIGN","OPERATING SYSTEMS",
-                  "OBJECT ORIENTED PROGRAMMING","INTRODUCTION TO INDUSTRIAL MANAGEMENT",
-                  "ARTIFICIAL INTELLIGENCE","CONSTITUTION OF INDIA","DATABASE MANAGEMENT SYSTEMS",
-                  "COMPUTER NETWORKS","DISTRIBUTED SYSTEMS","IMAGE PROCESSING","PATTERN RECOGNITION",
-                  "NUMERICAL METHODS","RESEARCH METHODOLOGY","DATA WAREHOUSING & DATA MINING",
-                  "HUMAN RESOURCE DEVELOPMENT & ORGANIZATIONAL BEHAVIOR","MACHINE LEARNING",
-                  "SOFT COMPUTING","ADHOC-SENSOR NETWORK","OPERATION RESEARCH",
-                  "MULTIMEDIA TECHNOLOGY","PROJECT MANAGEMENT & ENTREPENEURSHIP",
-                  "CRYPTOGRAPHY & NETWORK SECURITY","INTERNET OF THINGS","BIG DATA ANALYSIS",
-                  "MOBILE COMPUTING","E-COMMERCE & ERP",
-                ]} placeholder="Subject" />
+                <Select
+                  value={semester}
+                  onChange={setSemester}
+                  options={["1", "2", "3", "4", "5", "6", "7", "8"]}
+                  placeholder="Semester"
+                />
+                <Select
+                  value={subject}
+                  onChange={setSubject}
+                  options={availableSubjects}
+                  placeholder={semester ? "Subject" : "Subject (pick sem first)"}
+                  disabled={availableSubjects.length === 0}
+                />
               </div>
+
+              {/* Subtle hint when a semester is selected */}
+              {semester && (
+                <div className="sem-hint">
+                  Showing {availableSubjects.length} subject{availableSubjects.length !== 1 ? "s" : ""} for Semester {semester}
+                  {subject && (
+                    <span
+                      style={{ marginLeft: 10, color: "rgba(96,165,250,0.65)", cursor: "pointer" }}
+                      onClick={() => setSubject("")}
+                    >
+                      · clear subject ✕
+                    </span>
+                  )}
+                </div>
+              )}
+
               <motion.button
                 onClick={handleApplyFilters}
                 className="apply-btn"
@@ -587,7 +626,7 @@ export default function ViewNotes() {
               </motion.button>
             </motion.div>
 
-            {/* ── ALL NOTES — renders every note, no limit ── */}
+            {/* ── ALL NOTES ── */}
             <AnimatePresence mode="wait">
               {loading ? (
                 <motion.div

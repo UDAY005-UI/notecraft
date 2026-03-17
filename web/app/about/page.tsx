@@ -80,8 +80,8 @@ export default function AboutPage() {
   const { openSignUp } = useClerk();
 
   const handleGetStarted = () => {
-    if (isSignedIn) router.push("/view-notes");
-    else openSignUp({ afterSignInUrl: "/view-notes", afterSignUpUrl: "/view-notes" });
+    if (isSignedIn) router.push("/home");
+    else openSignUp({ afterSignInUrl: "/home", afterSignUpUrl: "/home" });
   };
 
   return (

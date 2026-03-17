@@ -57,14 +57,14 @@ export default function Home() {
 
   const handleGetStarted = () => {
     if (isSignedIn) {
-      router.push("/view-notes");
+      router.push("/home");
     } else {
-      openSignUp({ afterSignInUrl: "/view-notes", afterSignUpUrl: "/view-notes" });
+      openSignUp({ afterSignInUrl: "/home", afterSignUpUrl: "/home" });
     }
   };
 
   const handleBrowseComponents = () => {
-    router.push("/view-notes");
+    router.push("/home");
   };
 
   return (
